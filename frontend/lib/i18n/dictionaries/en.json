@@ -1,0 +1,121 @@
+{
+  "nav": {
+    "home": "Home",
+    "buyCars": "Buy Cars",
+    "sellCars": "Sell Cars",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "carDetail": {
+    "backToListings": "Back to Listings",
+    "brokerProtectedDeal": "Broker Protected Deal",
+    "description": "Description",
+    "featuresEquipment": "Features & Equipment",
+    "sellerInfo": "Seller Information",
+    "requestPurchase": "Request Purchase",
+    "talkToBroker": "Talk to Broker",
+    "signInToView": "Sign in to view",
+    "signInRequired": "Sign in required to contact seller"
+  },
+  "carSpecs": {
+    "year": "Year",
+    "mileage": "Mileage",
+    "fuel": "Fuel",
+    "transmission": "Transmission"
+  },
+  "trust": {
+    "title": "Platform Protection",
+    "communication": "All communication goes through platform",
+    "noDirectContact": "No direct buyer-seller contact allowed",
+    "securePayment": "Secure payment via escrow"
+  },
+  "seller": {
+    "verified": "Verified Seller",
+    "memberSince": "Member since",
+    "location": "Location",
+    "note": "For your protection, all communication with this seller goes through our broker team. Direct contact information is not shared."
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Enter your credentials to access your account",
+    "createAccount": "Create an account",
+    "signUpSubtitle": "Start your journey with CarBroker",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signInButton": "Sign In",
+    "signUpButton": "Create Account",
+    "orContinueWith": "Or continue with",
+    "google": "Google",
+    "facebook": "Facebook",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "selectRole": "I want to",
+    "buyer": "Buy a Car",
+    "buyerDesc": "Browse and purchase vehicles",
+    "sellerRole": "Sell a Car",
+    "sellerDesc": "List and sell your vehicles",
+    "agreeTerms": "I agree to the",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "platformBenefit": "Buy and sell cars safely through our broker-protected platform. No direct contact between buyers and sellers."
+  },
+  "buyCars": {
+    "title": "Find Your Perfect Car",
+    "subtitle": "Browse verified vehicles from trusted sellers",
+    "searchPlaceholder": "Search by make, model, or keyword",
+    "filters": "Filters",
+    "resultsFound": "results found",
+    "viewDetails": "View Details",
+    "brokerProtected": "Broker Protected",
+    "allCars": "All Cars"
+  },
+  "sellCars": {
+    "title": "Sell Your Car",
+    "subtitle": "List your vehicle on our trusted marketplace and let our brokers handle the rest",
+    "ctaButton": "Start Listing",
+    "ctaButtonAuth": "Sign In to Sell",
+    "ctaSubtext": "Free to list. We only charge when you sell.",
+    "howItWorks": "How It Works",
+    "step1Title": "Create Your Listing",
+    "step1Desc": "Add photos, details, and set your price. Our team will review and optimize your listing.",
+    "step2Title": "We Find Buyers",
+    "step2Desc": "Our broker team markets your car and handles all inquiries from interested buyers.",
+    "step3Title": "Safe Transaction",
+    "step3Desc": "We verify buyers, handle negotiations, and ensure secure payment transfer.",
+    "whySell": "Why Sell With Us",
+    "benefit1Title": "Protected Transactions",
+    "benefit1Desc": "All sales are secured through our escrow system",
+    "benefit2Title": "No Direct Contact",
+    "benefit2Desc": "Our brokers handle all buyer communication",
+    "benefit3Title": "Best Price Guarantee",
+    "benefit3Desc": "Our experts help you price competitively",
+    "benefit4Title": "Sell Faster",
+    "benefit4Desc": "Average listing time is just 14 days"
+  },
+  "common": {
+    "loading": "Loading..."
+  },
+  "footer": {
+    "allRightsReserved": "All rights reserved.",
+    "copyright": "CarBroker"
+  },
+  "meta": {
+    "homeTitle": "CarBroker - Buy Cars Safely Through Trusted Brokers",
+    "homeDescription": "Browse verified cars and purchase safely through our broker-protected platform. No direct buyer-seller contact.",
+    "buyCarsTitle": "Buy Cars - CarBroker",
+    "buyCarsDescription": "Find your perfect car from our selection of verified vehicles. All purchases are broker-protected.",
+    "sellCarsTitle": "Sell Your Car - CarBroker",
+    "sellCarsDescription": "List your vehicle on our trusted marketplace. We handle buyer communication and ensure safe transactions.",
+    "authTitle": "Sign In - CarBroker",
+    "authDescription": "Sign in to your CarBroker account to buy or sell cars safely."
+  }
+}

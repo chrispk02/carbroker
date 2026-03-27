@@ -1,0 +1,121 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "buyCars": "Mua xe",
+    "sellCars": "Bán xe",
+    "signIn": "Đăng nhập",
+    "signUp": "Đăng ký",
+    "dashboard": "Bảng điều khiển",
+    "logout": "Đăng xuất"
+  },
+  "carDetail": {
+    "backToListings": "Quay lại danh sách",
+    "brokerProtectedDeal": "Giao dịch được Môi giới Bảo vệ",
+    "description": "Mô tả",
+    "featuresEquipment": "Tính năng & Trang bị",
+    "sellerInfo": "Thông tin Người bán",
+    "requestPurchase": "Yêu cầu Mua",
+    "talkToBroker": "Nói chuyện với Môi giới",
+    "signInToView": "Đăng nhập để xem",
+    "signInRequired": "Cần đăng nhập để liên hệ người bán"
+  },
+  "carSpecs": {
+    "year": "Năm",
+    "mileage": "Số km",
+    "fuel": "Nhiên liệu",
+    "transmission": "Hộp số"
+  },
+  "trust": {
+    "title": "Bảo vệ Nền tảng",
+    "communication": "Mọi liên lạc đều qua nền tảng",
+    "noDirectContact": "Không cho phép liên hệ trực tiếp",
+    "securePayment": "Thanh toán an toàn qua ký quỹ"
+  },
+  "seller": {
+    "verified": "Người bán Đã xác minh",
+    "memberSince": "Thành viên từ",
+    "location": "Địa điểm",
+    "note": "Để bảo vệ bạn, mọi liên lạc với người bán này đều thông qua đội ngũ môi giới. Thông tin liên hệ trực tiếp không được chia sẻ."
+  },
+  "auth": {
+    "welcomeBack": "Chào mừng trở lại",
+    "signInSubtitle": "Nhập thông tin đăng nhập để truy cập tài khoản",
+    "createAccount": "Tạo tài khoản",
+    "signUpSubtitle": "Bắt đầu hành trình với CarBroker",
+    "email": "Email",
+    "emailPlaceholder": "Nhập email của bạn",
+    "password": "Mật khẩu",
+    "passwordPlaceholder": "Nhập mật khẩu",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Nhập họ và tên",
+    "rememberMe": "Ghi nhớ đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "signInButton": "Đăng nhập",
+    "signUpButton": "Tạo tài khoản",
+    "orContinueWith": "Hoặc tiếp tục với",
+    "google": "Google",
+    "facebook": "Facebook",
+    "dontHaveAccount": "Chưa có tài khoản?",
+    "alreadyHaveAccount": "Đã có tài khoản?",
+    "selectRole": "Tôi muốn",
+    "buyer": "Mua xe",
+    "buyerDesc": "Duyệt và mua xe",
+    "sellerRole": "Bán xe",
+    "sellerDesc": "Đăng và bán xe",
+    "agreeTerms": "Tôi đồng ý với",
+    "termsOfService": "Điều khoản Dịch vụ",
+    "and": "và",
+    "privacyPolicy": "Chính sách Bảo mật",
+    "platformBenefit": "Mua và bán xe an toàn qua nền tảng được môi giới bảo vệ. Không có liên hệ trực tiếp giữa người mua và người bán."
+  },
+  "buyCars": {
+    "title": "Tìm Xe Hoàn Hảo",
+    "subtitle": "Duyệt xe đã được xác minh từ người bán đáng tin cậy",
+    "searchPlaceholder": "Tìm kiếm theo hãng, mẫu, hoặc từ khóa",
+    "filters": "Bộ lọc",
+    "resultsFound": "kết quả tìm thấy",
+    "viewDetails": "Xem Chi tiết",
+    "brokerProtected": "Môi giới Bảo vệ",
+    "allCars": "Tất cả Xe"
+  },
+  "sellCars": {
+    "title": "Bán Xe Của Bạn",
+    "subtitle": "Đăng xe trên nền tảng đáng tin cậy và để đội ngũ môi giới xử lý phần còn lại",
+    "ctaButton": "Bắt đầu Đăng bán",
+    "ctaButtonAuth": "Đăng nhập để Bán",
+    "ctaSubtext": "Miễn phí đăng bán. Chúng tôi chỉ thu phí khi bạn bán được.",
+    "howItWorks": "Quy Trình",
+    "step1Title": "Tạo Tin Đăng",
+    "step1Desc": "Thêm ảnh, thông tin chi tiết và đặt giá. Đội ngũ sẽ xem xét và tối ưu tin đăng.",
+    "step2Title": "Chúng Tôi Tìm Người Mua",
+    "step2Desc": "Đội ngũ môi giới quảng bá xe và xử lý mọi yêu cầu từ người mua quan tâm.",
+    "step3Title": "Giao Dịch An Toàn",
+    "step3Desc": "Chúng tôi xác minh người mua, đàm phán và đảm bảo chuyển tiền an toàn.",
+    "whySell": "Tại Sao Bán Với Chúng Tôi",
+    "benefit1Title": "Giao Dịch Được Bảo Vệ",
+    "benefit1Desc": "Tất cả giao dịch được bảo đảm qua hệ thống ký quỹ",
+    "benefit2Title": "Không Liên Hệ Trực Tiếp",
+    "benefit2Desc": "Môi giới xử lý mọi liên lạc với người mua",
+    "benefit3Title": "Đảm Bảo Giá Tốt Nhất",
+    "benefit3Desc": "Chuyên gia giúp bạn định giá cạnh tranh",
+    "benefit4Title": "Bán Nhanh Hơn",
+    "benefit4Desc": "Thời gian đăng bán trung bình chỉ 14 ngày"
+  },
+  "common": {
+    "loading": "Đang tải..."
+  },
+  "footer": {
+    "allRightsReserved": "Đã đăng ký bản quyền.",
+    "copyright": "CarBroker"
+  },
+  "meta": {
+    "homeTitle": "CarBroker - Mua Xe An Toàn Qua Môi Giới Đáng Tin Cậy",
+    "homeDescription": "Duyệt xe đã xác minh và mua an toàn qua nền tảng được môi giới bảo vệ. Không liên hệ trực tiếp giữa người mua và người bán.",
+    "buyCarsTitle": "Mua Xe - CarBroker",
+    "buyCarsDescription": "Tìm xe hoàn hảo từ danh sách xe đã xác minh. Tất cả giao dịch được môi giới bảo vệ.",
+    "sellCarsTitle": "Bán Xe - CarBroker",
+    "sellCarsDescription": "Đăng xe trên nền tảng đáng tin cậy. Chúng tôi xử lý liên lạc với người mua và đảm bảo giao dịch an toàn.",
+    "authTitle": "Đăng Nhập - CarBroker",
+    "authDescription": "Đăng nhập vào tài khoản CarBroker để mua hoặc bán xe an toàn."
+  }
+}
