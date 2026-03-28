@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { User, Phone, Mail, Shield, Camera, Loader2, CheckCircle, Car, ShoppingBag, ShieldCheck, KeyRound } from "lucide-react"
 import { useLocale } from "@/lib/i18n/locale-context"
@@ -11,7 +11,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -53,7 +53,7 @@ export function ProfileContent({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(
     searchParams.get('notice') === 'seller_required'
-      ? 'Bạn cần chuyển tài khoản sang Người bán để xem Dashboard phân tích.'
+      ? t.profile.sellerRequiredDesc
       : null
   )
 
@@ -64,7 +64,7 @@ export function ProfileContent({
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState<string | null>(null)
 
-  const memberSince = new Date(createdAt).toLocaleDateString('vi-VN', {
+  const memberSince = new Date(createdAt).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
     year: 'numeric',
     month: 'long',
   })
@@ -79,11 +79,11 @@ export function ProfileContent({
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('Chỉ chấp nhận file ảnh.')
+      setError(t.profile.imageOnly)
       return
     }
     if (file.size > 2 * 1024 * 1024) {
-      setError('Ảnh tối đa 2MB.')
+      setError(t.profile.imageSize)
       return
     }
 
@@ -98,7 +98,7 @@ export function ProfileContent({
       .upload(path, file, { upsert: true })
 
     if (uploadErr) {
-      setError('Không thể upload ảnh. Vui lòng thử lại.')
+      setError(t.profile.uploadFailed)
       setUploading(false)
       return
     }
@@ -109,7 +109,7 @@ export function ProfileContent({
     setUploading(false)
   }
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.SyntheticEvent) {
     e.preventDefault()
     setSaving(true)
     setError(null)
@@ -126,15 +126,14 @@ export function ProfileContent({
 
     if (updateErr) {
       if (updateErr.code === '23505' || updateErr.message?.includes('profiles_phone_unique')) {
-        setError('Số điện thoại này đã được sử dụng bởi tài khoản khác.')
+        setError(t.profile.phoneDuplicate)
       } else {
-        setError('Không thể lưu thông tin. Vui lòng thử lại.')
+        setError(t.profile.saveFailed)
       }
       setSaving(false)
       return
     }
 
-    // Update auth metadata
     await supabase.auth.updateUser({
       data: { full_name: fullName.trim() },
     })
@@ -147,7 +146,7 @@ export function ProfileContent({
 
   async function handleSendOtp() {
     if (!phone.trim()) {
-      setOtpError('Vui lòng nhập số điện thoại trước.')
+      setOtpError(t.profile.otpEnterPhone)
       return
     }
     setOtpLoading(true)
@@ -182,15 +181,15 @@ export function ProfileContent({
       <div className="min-h-screen bg-background py-10">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Hồ sơ cá nhân</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Quản lý thông tin tài khoản của bạn</p>
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{t.profile.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t.profile.subtitle}</p>
           </div>
 
           {notice && (
             <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-400">
               <Shield className="mt-0.5 size-4 shrink-0" />
               <div>
-                <p className="font-medium">Yêu cầu tài khoản Người bán</p>
+                <p className="font-medium">{t.profile.sellerRequired}</p>
                 <p className="mt-0.5 opacity-90">{notice}</p>
               </div>
               <button onClick={() => setNotice(null)} className="ml-auto shrink-0 opacity-60 hover:opacity-100">✕</button>
@@ -229,21 +228,21 @@ export function ProfileContent({
 
                   {/* Name + email */}
                   <div className="flex-1 text-center sm:text-left">
-                    <p className="text-lg font-semibold text-foreground">{fullName || 'Người dùng'}</p>
+                    <p className="text-lg font-semibold text-foreground">{fullName || t.profile.user}</p>
                     <p className="text-sm text-muted-foreground">{email}</p>
                     <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
                       <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
                         <ShieldCheck className="size-3" />
-                        Email đã xác thực
+                        {t.profile.emailVerified}
                       </Badge>
                       {phoneVerified && (
                         <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
                           <ShieldCheck className="size-3" />
-                          SĐT đã xác thực
+                          {t.profile.phoneVerified}
                         </Badge>
                       )}
                       <Badge variant="outline" className="gap-1 text-xs">
-                        Thành viên từ {memberSince}
+                        {t.profile.memberSince} {memberSince}
                       </Badge>
                     </div>
                   </div>
@@ -254,16 +253,16 @@ export function ProfileContent({
             {/* ─── Thông tin cá nhân ─── */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Thông tin cá nhân</CardTitle>
+                <CardTitle className="text-base">{t.profile.personalInfo}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5">
                     <User className="size-3.5 text-muted-foreground" />
-                    Họ và tên
+                    {t.profile.fullNameLabel}
                   </Label>
                   <Input
-                    placeholder="Nhập họ và tên"
+                    placeholder={t.profile.fullNamePlaceholder}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                   />
@@ -272,26 +271,26 @@ export function ProfileContent({
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5">
                     <Mail className="size-3.5 text-muted-foreground" />
-                    Email
+                    {t.auth.email}
                   </Label>
                   <Input value={email} disabled className="bg-secondary/50 text-muted-foreground" />
-                  <p className="text-[11px] text-muted-foreground">Email không thể thay đổi</p>
+                  <p className="text-[11px] text-muted-foreground">{t.profile.emailCannotChange}</p>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5">
                     <Phone className="size-3.5 text-muted-foreground" />
-                    Số điện thoại
+                    {t.profile.phoneLabel}
                     {phoneVerified && (
                       <Badge variant="secondary" className="ml-1 gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
                         <ShieldCheck className="size-3" />
-                        Đã xác thực
+                        {t.profile.phoneVerifiedTag}
                       </Badge>
                     )}
                   </Label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="VD: +84912345678"
+                      placeholder="+84912345678"
                       value={phone}
                       onChange={(e) => { setPhone(e.target.value); setPhoneVerified(false); setOtpSent(false); setOtp('') }}
                       type="tel"
@@ -306,18 +305,18 @@ export function ProfileContent({
                         onClick={handleSendOtp}
                         className="shrink-0"
                       >
-                        {otpLoading && !otpSent ? <Loader2 className="size-3.5 animate-spin" /> : 'Gửi mã'}
+                        {otpLoading && !otpSent ? <Loader2 className="size-3.5 animate-spin" /> : t.profile.sendOtp}
                       </Button>
                     )}
                   </div>
                   {otpSent && !phoneVerified && (
                     <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                       <p className="text-xs text-muted-foreground">
-                        Nhập mã OTP đã gửi đến <span className="font-medium">{phone}</span>
+                        {t.profile.otpSentTo} <span className="font-medium">{phone}</span>
                       </p>
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Nhập mã OTP"
+                          placeholder={t.profile.enterOtp}
                           value={otp}
                           onChange={(e) => setOtp(e.target.value)}
                           maxLength={6}
@@ -330,7 +329,7 @@ export function ProfileContent({
                           onClick={handleVerifyOtp}
                           className="shrink-0"
                         >
-                          {otpLoading ? <Loader2 className="size-3.5 animate-spin" /> : <><KeyRound className="mr-1.5 size-3.5" />Xác nhận</>}
+                          {otpLoading ? <Loader2 className="size-3.5 animate-spin" /> : <><KeyRound className="mr-1.5 size-3.5" />{t.profile.verifyOtp}</>}
                         </Button>
                       </div>
                       <button
@@ -339,7 +338,7 @@ export function ProfileContent({
                         disabled={otpLoading}
                         className="text-xs text-accent hover:underline disabled:opacity-50"
                       >
-                        Gửi lại mã
+                        {t.profile.resendOtp}
                       </button>
                     </div>
                   )}
@@ -349,10 +348,10 @@ export function ProfileContent({
                   {phoneVerified && (
                     <p className="text-xs text-emerald-600 flex items-center gap-1">
                       <CheckCircle className="size-3" />
-                      Số điện thoại đã được xác thực thành công
+                      {t.profile.otpVerified}
                     </p>
                   )}
-                  <p className="text-[11px] text-muted-foreground">Định dạng quốc tế: +84912345678</p>
+                  <p className="text-[11px] text-muted-foreground">{t.profile.phoneFormat}</p>
                 </div>
               </CardContent>
             </Card>
@@ -360,7 +359,7 @@ export function ProfileContent({
             {/* ─── Loại tài khoản ─── */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Loại tài khoản</CardTitle>
+                <CardTitle className="text-base">{t.profile.accountType}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className={`flex items-center gap-4 rounded-xl border-2 p-4 ${
@@ -372,16 +371,16 @@ export function ProfileContent({
                   }
                   <div className="flex-1">
                     <p className={`font-semibold ${role === 'seller' ? 'text-primary' : 'text-foreground'}`}>
-                      {role === 'seller' ? 'Người bán' : 'Người mua'}
+                      {role === 'seller' ? t.profile.seller : t.profile.buyer}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {role === 'seller' ? 'Đăng và bán xe — có quyền truy cập Dashboard phân tích' : 'Tìm kiếm và mua xe'}
+                      {role === 'seller' ? t.profile.sellerDesc : t.profile.buyerDesc}
                     </p>
                   </div>
                   <CheckCircle className={`size-5 shrink-0 ${role === 'seller' ? 'text-primary' : 'text-muted-foreground'}`} />
                 </div>
                 <p className="mt-2 text-[11px] text-muted-foreground">
-                  Loại tài khoản được xác định khi đăng ký và không thể thay đổi.
+                  {t.profile.accountTypeReadonly}
                 </p>
               </CardContent>
             </Card>
@@ -396,14 +395,14 @@ export function ProfileContent({
             {saved && (
               <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">
                 <CheckCircle className="size-4" />
-                Thông tin đã được lưu thành công!
+                {t.profile.savedSuccess}
               </div>
             )}
 
             <div className="flex gap-3">
               <Button type="submit" size="lg" className="flex-1" disabled={saving || uploading}>
                 {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-                {saving ? 'Đang lưu...' : 'Lưu thông tin'}
+                {saving ? t.profile.saving : t.profile.save}
               </Button>
               <Button
                 type="button"

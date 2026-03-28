@@ -64,7 +64,7 @@ function AuthForm() {
   }
 
   // ─── Handlers ────────────────────────────────────────────────
-  async function handleSignIn(e: React.FormEvent) {
+  async function handleSignIn(e: React.SyntheticEvent) {
     e.preventDefault();
     setAuthError(null);
     setIsLoading(true);
@@ -74,7 +74,7 @@ function AuthForm() {
     router.push(searchParams.get("returnUrl") || `/${locale}`);
   }
 
-  async function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: React.SyntheticEvent) {
     e.preventDefault();
     setAuthError(null);
     setIsLoading(true);
@@ -84,7 +84,7 @@ function AuthForm() {
     setPhoneOtpSent(true);
   }
 
-  async function handleVerifyOtp(e: React.FormEvent) {
+  async function handleVerifyOtp(e: React.SyntheticEvent) {
     e.preventDefault();
     setAuthError(null);
     setIsLoading(true);
@@ -94,7 +94,7 @@ function AuthForm() {
     router.push(searchParams.get("returnUrl") || `/${locale}`);
   }
 
-  async function handleSignUp(e: React.FormEvent) {
+  async function handleSignUp(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!agreeTerms) return;
     setAuthError(null);
@@ -199,7 +199,7 @@ function AuthForm() {
                         signInMode === mode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      {mode === "email" ? <><Mail className="size-3.5" /> Email</> : <><Phone className="size-3.5" /> Số điện thoại</>}
+                      {mode === "email" ? <><Mail className="size-3.5" /> Email</> : <><Phone className="size-3.5" /> {t.phoneAuth.phoneLabel}</>}
                     </button>
                   ))}
                 </div>
@@ -234,30 +234,30 @@ function AuthForm() {
                 ) : !phoneOtpSent ? (
                   <form onSubmit={handleSendOtp} className="space-y-4">
                     <Field>
-                      <FieldLabel>Số điện thoại</FieldLabel>
+                      <FieldLabel>{t.phoneAuth.phoneLabel}</FieldLabel>
                       <Input type="tel" placeholder="+84912345678" value={phoneLogin} onChange={(e) => setPhoneLogin(e.target.value)} required />
-                      <p className="mt-1 text-[11px] text-muted-foreground">Nhập số có mã quốc gia, VD: +84912345678</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{t.phoneAuth.hint}</p>
                     </Field>
                     <Button type="submit" className="w-full" size="lg" disabled={isLoading || !phoneLogin.trim()}>
                       {isLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Phone className="mr-2 size-4" />}
-                      {isLoading ? "Đang gửi..." : "Nhận mã OTP"}
+                      {isLoading ? t.phoneAuth.sending : t.phoneAuth.sendOtp}
                     </Button>
                   </form>
                 ) : (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Mã OTP đã gửi đến <span className="font-medium text-foreground">{phoneLogin}</span>
+                      {t.phoneAuth.otpSentTo} <span className="font-medium text-foreground">{phoneLogin}</span>
                     </p>
                     <Field>
-                      <FieldLabel>Mã OTP</FieldLabel>
+                      <FieldLabel>{t.phoneAuth.otpCode}</FieldLabel>
                       <Input placeholder="123456" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} maxLength={6} className="text-center tracking-widest text-xl font-mono" required />
                     </Field>
                     <Button type="submit" className="w-full" size="lg" disabled={isLoading || phoneOtp.length < 4}>
                       {isLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <KeyRound className="mr-2 size-4" />}
-                      {isLoading ? "Đang xác nhận..." : "Đăng nhập"}
+                      {isLoading ? t.phoneAuth.verifying : t.phoneAuth.signIn}
                     </Button>
                     <button type="button" onClick={() => { setPhoneOtpSent(false); setPhoneOtp(""); }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground">
-                      Đổi số điện thoại
+                      {t.phoneAuth.changePhone}
                     </button>
                   </form>
                 )}
@@ -280,30 +280,30 @@ function AuthForm() {
                     <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
                       <Mail className="size-8 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground">Kiểm tra email của bạn</h3>
+                    <h3 className="text-xl font-semibold text-foreground">{t.auth.checkEmail}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Email xác nhận đã gửi đến <span className="font-medium text-foreground">{signupEmail}</span>
+                      {t.auth.confirmSentTo} <span className="font-medium text-foreground">{signupEmail}</span>
                     </p>
-                    <p className="mt-1 text-sm text-muted-foreground">Nhấn vào link trong email để kích hoạt tài khoản.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t.auth.clickLinkToActivate}</p>
                     <div className="mt-6 rounded-lg border bg-secondary/50 px-4 py-3 text-left text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">Không nhận được email?</p>
+                      <p className="font-medium text-foreground">{t.auth.didntReceive}</p>
                       <ul className="mt-1 list-inside list-disc space-y-0.5">
-                        <li>Kiểm tra thư mục Spam / Junk</li>
-                        <li>Đợi 1–2 phút rồi thử lại</li>
+                        <li>{t.auth.checkSpam}</li>
+                        <li>{t.auth.waitAndRetry}</li>
                       </ul>
                     </div>
                     {resendSent ? (
                       <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-600">
-                        <CheckCircle2 className="size-4" /> Email đã được gửi lại!
+                        <CheckCircle2 className="size-4" /> {t.auth.emailResent}
                       </div>
                     ) : (
                       <button onClick={handleResendEmail} disabled={resendLoading} className="mt-4 mx-auto flex items-center gap-2 text-sm text-accent hover:underline disabled:opacity-50">
                         <RotateCcw className={cn("size-3.5", resendLoading && "animate-spin")} />
-                        {resendLoading ? "Đang gửi..." : "Gửi lại email xác nhận"}
+                        {resendLoading ? t.auth.resendSending : t.auth.resendConfirmation}
                       </button>
                     )}
                     <Button variant="outline" className="mt-6 w-full" onClick={() => { setSignupSuccess(false); setSignupName(""); setSignupEmail(""); setSignupPassword(""); setAgreeTerms(false); }}>
-                      Đăng ký tài khoản khác
+                      {t.auth.registerAnother}
                     </Button>
                   </div>
                 ) : (

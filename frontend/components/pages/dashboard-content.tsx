@@ -21,14 +21,16 @@ import type { DashboardData, SellerCar } from "@/lib/supabase/queries/dashboard"
 import { formatVND } from "@/lib/utils/format-price"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { createClient } from "@/lib/supabase/client"
-import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 
-const STATUS_LABEL: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  active:  { label: "Đang bán",  variant: "default" },
-  draft:   { label: "Nháp",      variant: "secondary" },
-  sold:    { label: "Đã bán",    variant: "outline" },
-  hidden:  { label: "Ẩn",        variant: "destructive" },
+function getStatusLabel(status: string, t: { dashboard: { statusActive: string; statusDraft: string; statusSold: string; statusHidden: string } }) {
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    active:  { label: t.dashboard.statusActive,  variant: "default" },
+    draft:   { label: t.dashboard.statusDraft,   variant: "secondary" },
+    sold:    { label: t.dashboard.statusSold,    variant: "outline" },
+    hidden:  { label: t.dashboard.statusHidden,  variant: "destructive" },
+  }
+  return map[status] ?? { label: status, variant: "secondary" as const }
 }
 
 interface DashboardContentProps {
@@ -37,10 +39,8 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ data, userName }: DashboardContentProps) {
-  const { locale } = useLocale()
-  const router = useRouter()
+  const { locale, dictionary: t } = useLocale()
   const [cars, setCars] = useState<SellerCar[]>(data.cars)
-  const [isPending, startTransition] = useTransition()
   const supabase = createClient()
 
   const postCarPath = locale === 'vi' ? `/${locale}/ban-xe/dang-tin` : `/${locale}/sell-cars/post`
@@ -273,7 +273,7 @@ export function DashboardContent({ data, userName }: DashboardContentProps) {
                 <div className="divide-y">
                   {cars.map((car) => {
                     const carPath = locale === 'vi' ? `/${locale}/xe/${car.slug}` : `/${locale}/car/${car.slug}`
-                    const statusConfig = STATUS_LABEL[car.status] ?? STATUS_LABEL.draft
+                    const statusConfig = getStatusLabel(car.status, t)
                     return (
                       <div key={car.id} className="flex items-center gap-4 p-4 hover:bg-secondary/30 transition-colors">
                         {/* Thumbnail */}
