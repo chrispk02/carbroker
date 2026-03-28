@@ -38,10 +38,10 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
   const authPath = `/${locale}/auth`
 
   const specs = [
-    { icon: Calendar, label: "Năm sản xuất", value: car.year.toString() },
-    { icon: Gauge, label: "Số km đã đi", value: formatKm(car.mileageKm) },
-    { icon: Fuel, label: "Nhiên liệu", value: car.fuel },
-    { icon: Settings2, label: "Hộp số", value: car.transmission },
+    { icon: Calendar, label: t.carSpecs.year,         value: car.year.toString() },
+    { icon: Gauge,    label: t.carSpecs.mileage,      value: formatKm(car.mileageKm) },
+    { icon: Fuel,     label: t.carSpecs.fuel,         value: car.fuel },
+    { icon: Settings2, label: t.carSpecs.transmission, value: car.transmission },
   ]
 
   return (
@@ -127,7 +127,7 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
                   {car.seller.isVerified && (
                     <Badge variant="secondary" className="gap-1 text-xs">
                       <CheckCircle className="size-3 text-emerald-500" />
-                      Đã xác minh
+                      {t.seller.verified}
                     </Badge>
                   )}
                 </div>
@@ -136,7 +136,7 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
                   {car.seller.location}
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Thành viên từ {car.seller.memberSince}
+                  {t.seller.memberSince} {car.seller.memberSince}
                 </p>
               </div>
             </div>

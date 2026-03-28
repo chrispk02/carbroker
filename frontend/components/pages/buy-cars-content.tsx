@@ -20,15 +20,7 @@ import {
 import type { Car } from "@/lib/data/cars"
 import { formatVND, formatKm } from "@/lib/utils/format-price"
 
-const BRANDS = ["Tất cả", "Toyota", "Honda", "Mazda", "Hyundai", "VinFast", "Kia", "Ford", "Mercedes-Benz", "Mitsubishi"]
-const PRICE_RANGES = [
-  { label: "Tất cả mức giá", value: "all" },
-  { label: "Dưới 500 triệu", value: "0-500" },
-  { label: "500 triệu - 1 tỷ", value: "500-1000" },
-  { label: "1 tỷ - 2 tỷ", value: "1000-2000" },
-  { label: "Trên 2 tỷ", value: "2000+" },
-]
-const FUEL_TYPES = ["Tất cả", "Xăng", "Dầu Diesel", "Hybrid", "Điện"]
+const BRANDS = ["Toyota", "Honda", "Mazda", "Hyundai", "VinFast", "Kia", "Ford", "Mercedes-Benz", "Mitsubishi"]
 
 interface BuyCarsContentProps {
   cars: Car[]
@@ -36,10 +28,26 @@ interface BuyCarsContentProps {
 
 export function BuyCarsContent({ cars }: BuyCarsContentProps) {
   const { locale, dictionary: t } = useLocale()
-  const [search, setSearch] = useState("")
-  const [selectedBrand, setSelectedBrand] = useState("Tất cả")
-  const [priceRange, setPriceRange] = useState("all")
-  const [fuelType, setFuelType] = useState("Tất cả")
+
+  const PRICE_RANGES = [
+    { label: t.buyCars.priceAll,       value: "all" },
+    { label: t.buyCars.priceUnder500m, value: "0-500" },
+    { label: t.buyCars.price500m1b,    value: "500-1000" },
+    { label: t.buyCars.price1b2b,      value: "1000-2000" },
+    { label: t.buyCars.priceOver2b,    value: "2000+" },
+  ]
+  // Values match Vietnamese data stored in DB; labels are translated
+  const FUEL_TYPES = [
+    { value: "Xăng",       label: t.buyCars.fuelGasoline },
+    { value: "Dầu Diesel", label: t.buyCars.fuelDiesel },
+    { value: "Hybrid",     label: t.buyCars.fuelHybrid },
+    { value: "Điện",       label: t.buyCars.fuelElectric },
+  ]
+
+  const [search, setSearch]             = useState("")
+  const [selectedBrand, setSelectedBrand] = useState("")
+  const [priceRange, setPriceRange]     = useState("all")
+  const [selectedFuel, setSelectedFuel] = useState("")
 
   const filtered = cars.filter((car) => {
     const matchSearch =
@@ -48,20 +56,22 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
       car.brand.toLowerCase().includes(search.toLowerCase()) ||
       car.model.toLowerCase().includes(search.toLowerCase())
 
-    const matchBrand = selectedBrand === "Tất cả" || car.brand === selectedBrand
-    const matchFuel = fuelType === "Tất cả" || car.fuel === fuelType
+    const matchBrand = !selectedBrand || car.brand === selectedBrand
+    const matchFuel  = !selectedFuel  || car.fuel  === selectedFuel
 
     let matchPrice = true
     if (priceRange !== "all") {
       const price = car.priceVND / 1_000_000
-      if (priceRange === "0-500") matchPrice = price < 500
-      else if (priceRange === "500-1000") matchPrice = price >= 500 && price < 1000
+      if (priceRange === "0-500")     matchPrice = price < 500
+      else if (priceRange === "500-1000") matchPrice = price >= 500  && price < 1000
       else if (priceRange === "1000-2000") matchPrice = price >= 1000 && price < 2000
       else if (priceRange === "2000+") matchPrice = price >= 2000
     }
 
     return matchSearch && matchBrand && matchFuel && matchPrice
   })
+
+  const hasFilters = selectedBrand || priceRange !== "all" || selectedFuel || search
 
   return (
     <>
@@ -96,7 +106,7 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
             <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-3">
               <Select value={selectedBrand} onValueChange={setSelectedBrand}>
                 <SelectTrigger className="h-9 w-40 text-sm">
-                  <SelectValue placeholder="Hãng xe" />
+                  <SelectValue placeholder={t.buyCars.brandLabel} />
                 </SelectTrigger>
                 <SelectContent>
                   {BRANDS.map((b) => (
@@ -107,7 +117,7 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
 
               <Select value={priceRange} onValueChange={setPriceRange}>
                 <SelectTrigger className="h-9 w-44 text-sm">
-                  <SelectValue placeholder="Mức giá" />
+                  <SelectValue placeholder={t.buyCars.priceLabel} />
                 </SelectTrigger>
                 <SelectContent>
                   {PRICE_RANGES.map((p) => (
@@ -116,29 +126,29 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
                 </SelectContent>
               </Select>
 
-              <Select value={fuelType} onValueChange={setFuelType}>
+              <Select value={selectedFuel} onValueChange={setSelectedFuel}>
                 <SelectTrigger className="h-9 w-36 text-sm">
-                  <SelectValue placeholder="Nhiên liệu" />
+                  <SelectValue placeholder={t.buyCars.fuelLabel} />
                 </SelectTrigger>
                 <SelectContent>
                   {FUEL_TYPES.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              {(selectedBrand !== "Tất cả" || priceRange !== "all" || fuelType !== "Tất cả" || search) && (
+              {hasFilters && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSearch("")
-                    setSelectedBrand("Tất cả")
+                    setSelectedBrand("")
                     setPriceRange("all")
-                    setFuelType("Tất cả")
+                    setSelectedFuel("")
                   }}
                 >
-                  Xóa bộ lọc
+                  {t.buyCars.clearFilters}
                 </Button>
               )}
             </div>
@@ -162,8 +172,8 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
             {filtered.length === 0 ? (
               <div className="py-20 text-center text-muted-foreground">
                 <CarIcon className="mx-auto mb-4 size-12 opacity-30" />
-                <p className="text-lg font-medium">Không tìm thấy xe phù hợp</p>
-                <p className="mt-1 text-sm">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                <p className="text-lg font-medium">{t.buyCars.noResults}</p>
+                <p className="mt-1 text-sm">{t.buyCars.noResultsHint}</p>
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -184,12 +194,12 @@ export function BuyCarsContent({ cars }: BuyCarsContentProps) {
                           {car.verified && (
                             <Badge className="absolute left-3 top-3 gap-1 bg-emerald-500 text-white hover:bg-emerald-500">
                               <CheckCircle className="size-3" />
-                              Đã xác minh
+                              {t.buyCars.verified}
                             </Badge>
                           )}
                           {car.fuel === "Điện" && (
                             <Badge className="absolute right-3 top-3 bg-blue-500 text-white hover:bg-blue-500">
-                              ⚡ Điện
+                              ⚡ {t.buyCars.electric}
                             </Badge>
                           )}
                         </div>

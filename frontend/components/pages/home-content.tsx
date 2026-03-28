@@ -23,27 +23,6 @@ import type { Car } from "@/lib/data/cars"
 import { formatVND, formatKm } from "@/lib/utils/format-price"
 import type { SiteConfig } from "@/lib/supabase/queries/admin"
 
-const howItWorks = [
-  {
-    step: "01",
-    icon: Search,
-    title: "Tìm xe phù hợp",
-    description: "Duyệt hàng nghìn xe đã được xác minh. Lọc theo hãng, giá, năm sản xuất, địa điểm.",
-  },
-  {
-    step: "02",
-    icon: MessageCircle,
-    title: "Kết nối qua môi giới",
-    description: "Mọi liên lạc đều qua đội ngũ môi giới chuyên nghiệp. Thông tin cá nhân được bảo vệ tuyệt đối.",
-  },
-  {
-    step: "03",
-    icon: Shield,
-    title: "Thanh toán an toàn",
-    description: "Tiền được giữ ký quỹ cho đến khi xe được bàn giao đầy đủ và bạn hài lòng.",
-  },
-]
-
 interface HomeContentProps {
   featuredCars: Car[]
   siteConfig: SiteConfig
@@ -51,7 +30,7 @@ interface HomeContentProps {
 }
 
 export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: HomeContentProps) {
-  const { locale: ctxLocale } = useLocale()
+  const { locale: ctxLocale, dictionary: t } = useLocale()
   const locale = localeProp || ctxLocale
 
   const isVi = locale === "vi"
@@ -63,10 +42,16 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
   const heroSubtitle = isVi ? siteConfig.hero_subtitle_vi : siteConfig.hero_subtitle_en
 
   const stats = [
-    { icon: CarIcon, value: siteConfig.stats_cars_value,   label: isVi ? "Xe đang bán"            : "Cars Listed" },
-    { icon: Users,   value: siteConfig.stats_users_value,  label: isVi ? "Người dùng tin tưởng"   : "Trusted Users" },
-    { icon: CheckCircle, value: siteConfig.stats_deals_value,  label: isVi ? "Giao dịch thành công" : "Successful Deals" },
-    { icon: Star,    value: siteConfig.stats_rating_value, label: isVi ? "Đánh giá hài lòng"      : "Satisfaction Rating" },
+    { icon: CarIcon,     value: siteConfig.stats_cars_value,   label: t.home.statsCars },
+    { icon: Users,       value: siteConfig.stats_users_value,  label: t.home.statsUsers },
+    { icon: CheckCircle, value: siteConfig.stats_deals_value,  label: t.home.statsDeals },
+    { icon: Star,        value: siteConfig.stats_rating_value, label: t.home.statsRating },
+  ]
+
+  const howItWorks = [
+    { step: "01", icon: Search,        title: t.home.step1Title, description: t.home.step1Desc },
+    { step: "02", icon: MessageCircle, title: t.home.step2Title, description: t.home.step2Desc },
+    { step: "03", icon: Shield,        title: t.home.step3Title, description: t.home.step3Desc },
   ]
 
   return (
@@ -94,12 +79,12 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm theo hãng xe, mẫu xe..."
+                  placeholder={t.home.searchPlaceholder}
                   className="h-12 pl-10 text-base"
                 />
               </div>
               <Button size="lg" className="h-12 px-6" asChild>
-                <Link href={buyPath}>Tìm xe</Link>
+                <Link href={buyPath}>{t.home.searchBtn}</Link>
               </Button>
             </div>
 
@@ -119,12 +104,12 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
                 <Link href={buyPath}>
-                  Xem xe ngay
+                  {t.home.viewCars}
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href={sellPath}>Đăng bán xe</Link>
+                <Link href={sellPath}>{t.home.sellCar}</Link>
               </Button>
             </div>
           </div>
@@ -153,14 +138,14 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex items-end justify-between">
             <div>
-              <p className="text-sm font-medium text-primary">Xe nổi bật</p>
+              <p className="text-sm font-medium text-primary">{t.home.featuredLabel}</p>
               <h2 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-                Xe mới đăng gần đây
+                {t.home.featuredTitle}
               </h2>
             </div>
             <Button variant="ghost" asChild className="gap-1 text-sm">
               <Link href={buyPath}>
-                Xem tất cả
+                {t.home.viewAll}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -184,7 +169,7 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
                       {car.verified && (
                         <Badge className="absolute left-3 top-3 gap-1 bg-emerald-500 text-white hover:bg-emerald-500">
                           <CheckCircle className="size-3" />
-                          Đã xác minh
+                          {t.home.verified}
                         </Badge>
                       )}
                       <p className="absolute bottom-3 left-3 text-sm font-semibold text-white">
@@ -220,9 +205,9 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
       <section className="bg-secondary/30 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 text-center">
-            <p className="text-sm font-medium text-primary">Thương hiệu</p>
+            <p className="text-sm font-medium text-primary">{t.home.brandsLabel}</p>
             <h2 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-              Hãng xe phổ biến
+              {t.home.brandsTitle}
             </h2>
           </div>
           <div className="grid grid-cols-4 gap-4 sm:grid-cols-8">
@@ -234,7 +219,7 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
               >
                 <span className="text-2xl">{brand.logo}</span>
                 <span className="text-xs font-medium text-foreground leading-tight">{brand.name}</span>
-                <span className="text-[10px] text-muted-foreground">{brand.count} xe</span>
+                <span className="text-[10px] text-muted-foreground">{brand.count} {t.home.carsUnit}</span>
               </Link>
             ))}
           </div>
@@ -245,12 +230,12 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <p className="text-sm font-medium text-primary">Đơn giản & An toàn</p>
+            <p className="text-sm font-medium text-primary">{t.home.simpleAndSafe}</p>
             <h2 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">
-              Cách thức hoạt động
+              {t.home.howWorksTitle}
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Chỉ 3 bước đơn giản để sở hữu chiếc xe mơ ước
+              {t.home.howWorksSubtitle}
             </p>
           </div>
 
@@ -282,10 +267,8 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Giao dịch bảo vệ</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Tiền được giữ ký quỹ an toàn cho đến khi bạn nhận xe và hài lòng.
-                </p>
+                <h3 className="font-semibold text-foreground">{t.home.trust1Title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.home.trust1Desc}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -295,10 +278,8 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Giá thị trường minh bạch</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Giá xe được so sánh với thị trường. Không có phí ẩn hay chi phí bất ngờ.
-                </p>
+                <h3 className="font-semibold text-foreground">{t.home.trust2Title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.home.trust2Desc}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -308,10 +289,8 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Xe đã qua kiểm định</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Mọi xe đều được xác minh lý lịch, kiểm tra kỹ thuật trước khi đăng bán.
-                </p>
+                <h3 className="font-semibold text-foreground">{t.home.trust3Title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.home.trust3Desc}</p>
               </div>
             </div>
           </div>
@@ -323,20 +302,20 @@ export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: Ho
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-2xl bg-primary px-8 py-14 text-center">
             <h2 className="text-2xl font-bold text-primary-foreground sm:text-3xl">
-              Sẵn sàng tìm chiếc xe mơ ước?
+              {t.home.ctaTitle}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80">
-              Hơn 1.200 xe ô tô đang chờ bạn khám phá. Đăng ký miễn phí và bắt đầu ngay hôm nay.
+              {t.home.ctaDesc}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" variant="secondary" asChild>
                 <Link href={buyPath}>
-                  Xem xe ngay
+                  {t.home.ctaViewCars}
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                <Link href={sellPath}>Đăng bán xe của bạn</Link>
+                <Link href={sellPath}>{t.home.ctaSell}</Link>
               </Button>
             </div>
           </div>
