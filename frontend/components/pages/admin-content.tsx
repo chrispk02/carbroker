@@ -202,7 +202,12 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
     })
-    if (res.ok) setUsers(prev => prev.filter(u => u.id !== userId))
+    const json = await res.json()
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } else {
+      alert(`Không thể xoá: ${json.error ?? 'Lỗi không xác định'}`)
+    }
     setLoadingId(null)
   }
 

@@ -12,9 +12,15 @@ export async function POST(req: NextRequest) {
 
   const { userId } = await req.json()
   if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
-  if (userId === user.id) return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
+  if (userId === user.id) return NextResponse.json({ error: 'Không thể xoá tài khoản của chính mình' }, { status: 400 })
 
   const admin = createAdminClient()
+
+  // Delete user data before deleting auth user (FK constraints)
+  await admin.from('seller_kyc').delete().eq('user_id', userId)
+  await admin.from('cars').delete().eq('seller_id', userId)
+  await admin.from('profiles').delete().eq('id', userId)
+
   const { error } = await admin.auth.admin.deleteUser(userId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
