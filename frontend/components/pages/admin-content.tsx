@@ -17,7 +17,6 @@ import {
 import type { AdminData, AdminUser, AdminCar, AdminKyc, SiteConfig } from '@/lib/supabase/queries/admin'
 import { useLocale } from '@/lib/i18n/locale-context'
 import { useAuth } from '@/lib/auth/context'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
@@ -148,6 +147,39 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
   ].filter(d => d.value > 0), [stats, data.cars, t])
 
   const verifiedCount = data.cars.filter(c => c.verified).length
+
+  // ── Extended analytics ───────────────────────────────────
+  const gmv = useMemo(() =>
+    data.cars.filter(c => c.status === 'active').reduce((s, c) => s + c.price_vnd, 0)
+  , [data.cars])
+
+  const avgViewsPerCar = useMemo(() =>
+    stats.totalCars ? Math.round(stats.totalViews / stats.totalCars) : 0
+  , [stats])
+
+  const sellersWithCars = useMemo(() => {
+    const emails = new Set(data.cars.map(c => c.seller_email))
+    return data.users.filter(u => u.role === 'seller' && emails.has(u.email)).length
+  }, [data])
+
+  const kycApproved = data.kyc.filter(k => k.status === 'approved').length
+  const kycTotal = data.kyc.length
+
+  const topListings = useMemo(() =>
+    [...data.cars].sort((a, b) => b.view_count - a.view_count).slice(0, 5)
+  , [data.cars])
+
+  const funnel = useMemo(() => {
+    const base = stats.totalUsers || 1
+    return [
+      { label: 'Tổng người dùng', value: stats.totalUsers,  pct: 100 },
+      { label: 'Người bán',       value: stats.totalSellers, pct: Math.round(stats.totalSellers / base * 100) },
+      { label: 'Đã KYC',          value: kycTotal,           pct: Math.round(kycTotal / base * 100) },
+      { label: 'KYC duyệt',       value: kycApproved,        pct: Math.round(kycApproved / base * 100) },
+      { label: 'Đã đăng xe',      value: stats.totalCars,    pct: Math.round(stats.totalCars / base * 100) },
+      { label: 'Đã bán',          value: stats.soldCars,     pct: Math.round(stats.soldCars / base * 100) },
+    ]
+  }, [stats, kycTotal, kycApproved])
 
   const filteredUsers = useMemo(() => users.filter(u => {
     const matchSearch = !search ||
@@ -293,13 +325,14 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
   ] as const
 
   // ── Sidebar nav items ────────────────────────────────────
-  const navItems = [
+  type NavItem = { key: string; label: string; icon: React.ElementType; badge?: number; badgeRed?: boolean }
+  const navItems: NavItem[] = [
     { key: 'overview', label: t.admin.tabOverview, icon: BarChart3 },
-    { key: 'users',    label: `${t.admin.colUser}`, icon: Users, badge: users.length },
+    { key: 'users',    label: t.admin.colUser,      icon: Users, badge: users.length },
     { key: 'cars',     label: t.admin.colListing,   icon: Car,   badge: cars.length },
     { key: 'content',  label: t.admin.tabContent,   icon: Settings },
     { key: 'kyc',      label: t.kyc.adminTabKyc,    icon: ShieldCheck, badge: pendingKycCount || undefined, badgeRed: true },
-  ] as const
+  ]
 
   // Page title per tab
   const pageTitle: Record<typeof tab, string> = {
@@ -492,7 +525,7 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                   <div className="rounded-xl border bg-white p-5 shadow-sm">
                     <p className="mb-4 text-sm font-semibold text-gray-900 flex items-center gap-2">
-                      <BarChart3 className="size-4 text-orange-500" />{t.admin.chartBrand}
+                      <BarChart3 className="size-4 text-orange-500" />{t.admin.chartTopBrands}
                     </p>
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={topBrands} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
@@ -508,7 +541,7 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                   <div className="rounded-xl border bg-white p-5 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
                       <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                        <Star className="size-4 text-yellow-500" />{t.admin.recentUsers}
+                        <Star className="size-4 text-yellow-500" />Người dùng mới
                       </p>
                       <button onClick={() => switchTab('users')} className="text-xs text-blue-600 hover:underline">{t.admin.viewAll}</button>
                     </div>
@@ -531,30 +564,148 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                   </div>
                 </div>
 
-                {/* Recent cars */}
-                <div className="rounded-xl border bg-white p-5 shadow-sm">
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                      <Car className="size-4 text-emerald-500" />{t.admin.recentListings}
-                    </p>
-                    <button onClick={() => switchTab('cars')} className="text-xs text-blue-600 hover:underline">{t.admin.viewAll}</button>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {data.cars.slice(0, 5).map(c => (
-                      <div key={c.id} className="flex items-center gap-3 py-2.5">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-500">
-                          {c.brand.slice(0, 2).toUpperCase()}
+                {/* Platform Analytics Row */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+                  {/* GMV + key metrics */}
+                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                    <p className="mb-4 text-sm font-semibold text-gray-900">Chỉ số nền tảng</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-[11px] text-blue-500 font-medium">Tổng giá trị niêm yết</p>
+                          <p className="text-lg font-bold text-blue-700">{formatPrice(gmv)}</p>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-gray-900">{c.title}</p>
-                          <p className="text-xs text-gray-400">{c.seller_name ?? c.seller_email} · {formatDate(c.created_at)}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-gray-900">{formatPrice(c.price_vnd)}</p>
-                          <StatusBadge status={c.status} statusMap={statusMap} />
-                        </div>
+                        <DollarSign className="size-6 text-blue-300" />
                       </div>
-                    ))}
+                      <div className="flex items-center justify-between rounded-lg bg-orange-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-[11px] text-orange-500 font-medium">Lượt xem / tin đăng</p>
+                          <p className="text-lg font-bold text-orange-700">{avgViewsPerCar}</p>
+                        </div>
+                        <Eye className="size-6 text-orange-300" />
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg bg-purple-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-[11px] text-purple-500 font-medium">Tỉ lệ KYC duyệt</p>
+                          <p className="text-lg font-bold text-purple-700">{kycTotal ? Math.round(kycApproved / kycTotal * 100) : 0}%</p>
+                        </div>
+                        <ShieldCheck className="size-6 text-purple-300" />
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-[11px] text-emerald-500 font-medium">Người bán có xe</p>
+                          <p className="text-lg font-bold text-emerald-700">{stats.totalSellers ? Math.round(sellersWithCars / stats.totalSellers * 100) : 0}%</p>
+                        </div>
+                        <TrendingUp className="size-6 text-emerald-300" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Conversion funnel */}
+                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                    <p className="mb-4 text-sm font-semibold text-gray-900">Phễu chuyển đổi</p>
+                    <div className="space-y-2">
+                      {funnel.map((step, i) => (
+                        <div key={step.label}>
+                          <div className="mb-1 flex items-center justify-between text-xs">
+                            <span className="text-gray-600 font-medium">{step.label}</span>
+                            <span className="tabular-nums font-semibold text-gray-900">{step.value.toLocaleString()} <span className="text-gray-400 font-normal">({step.pct}%)</span></span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${step.pct}%`,
+                                backgroundColor: ['#3b82f6','#8b5cf6','#f59e0b','#10b981','#06b6d4','#6366f1'][i],
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top listings by views */}
+                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900">Top tin đăng</p>
+                      <button onClick={() => switchTab('cars')} className="text-xs text-blue-600 hover:underline">{t.admin.viewAll}</button>
+                    </div>
+                    <div className="space-y-2">
+                      {topListings.map((c, i) => (
+                        <div key={c.id} className="flex items-center gap-2.5">
+                          <span className={cn(
+                            'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+                            i === 0 ? 'bg-yellow-100 text-yellow-700' :
+                            i === 1 ? 'bg-gray-200 text-gray-600' :
+                            i === 2 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'
+                          )}>{i + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-gray-900">{c.title}</p>
+                            <p className="text-[10px] text-gray-400">{c.brand} · {formatPrice(c.price_vnd)}</p>
+                          </div>
+                          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-gray-500 font-medium">
+                            <Eye className="size-3" />{c.view_count}
+                          </span>
+                        </div>
+                      ))}
+                      {topListings.length === 0 && <p className="py-4 text-center text-xs text-gray-400">Chưa có tin đăng</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent cars + recent users */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Car className="size-4 text-emerald-500" />{t.admin.recentListings}
+                      </p>
+                      <button onClick={() => switchTab('cars')} className="text-xs text-blue-600 hover:underline">{t.admin.viewAll}</button>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {data.cars.slice(0, 5).map(c => (
+                        <div key={c.id} className="flex items-center gap-3 py-2.5">
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold text-gray-500">
+                            {c.brand.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-900">{c.title}</p>
+                            <p className="text-xs text-gray-400">{c.seller_name ?? c.seller_email} · {formatDate(c.created_at)}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-semibold text-gray-900">{formatPrice(c.price_vnd)}</p>
+                            <StatusBadge status={c.status} statusMap={statusMap} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Star className="size-4 text-yellow-500" />Người dùng mới
+                      </p>
+                      <button onClick={() => switchTab('users')} className="text-xs text-blue-600 hover:underline">{t.admin.viewAll}</button>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {data.users.slice(0, 5).map(u => (
+                        <div key={u.id} className="flex items-center gap-3 py-2.5">
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                            {(u.full_name?.[0] ?? u.email[0] ?? '?').toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-900">{u.full_name || <span className="text-gray-400 italic">{t.admin.noName}</span>}</p>
+                            <p className="truncate text-xs text-gray-400">{u.email}</p>
+                          </div>
+                          <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', u.role === 'seller' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700')}>
+                            {u.role === 'seller' ? t.admin.sellerRole : t.admin.buyerRole}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -620,7 +771,7 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                             <Input type="password" placeholder={t.admin.passwordHint} value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
                           </div>
                           <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-gray-500">{t.admin.roleLabel}</label>
+                            <label className="text-xs font-medium text-gray-500">Vai trò</label>
                             <div className="flex gap-2">
                               {(['buyer', 'seller'] as const).map(r => (
                                 <button key={r} type="button" onClick={() => setNewRole(r)} className={cn('flex-1 rounded-lg border py-2 text-sm font-medium transition-colors', newRole === r ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-500 hover:bg-gray-50')}>
