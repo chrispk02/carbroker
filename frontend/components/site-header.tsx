@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, UserCircle } from "lucide-react";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ export function SiteHeader() {
   const buyPath = locale === "vi" ? `/${locale}/mua-xe` : `/${locale}/buy-cars`;
   const sellPath = locale === "vi" ? `/${locale}/ban-xe` : `/${locale}/sell-cars`;
   const authPath = `/${locale}/auth`;
+  const dashboardPath = `/${locale}/dashboard`;
+  const profilePath = `/${locale}/profile`;
 
   const navLinks = [
     { href: `/${locale}`, label: t.nav.home },
@@ -95,9 +97,15 @@ export function SiteHeader() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="flex items-center gap-2">
+                    <Link href={dashboardPath} className="flex items-center gap-2">
                       <LayoutDashboard className="size-4" />
                       {t.nav.dashboard}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={profilePath} className="flex items-center gap-2">
+                      <UserCircle className="size-4" />
+                      {t.nav.profile}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -166,11 +174,18 @@ export function SiteHeader() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <Link
-                        href="/dashboard"
+                        href={dashboardPath}
                         className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                       >
                         <LayoutDashboard className="size-4" />
                         {t.nav.dashboard}
+                      </Link>
+                      <Link
+                        href={profilePath}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                      >
+                        <UserCircle className="size-4" />
+                        {t.nav.profile}
                       </Link>
                       <button
                         onClick={logout}

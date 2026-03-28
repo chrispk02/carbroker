@@ -6,7 +6,7 @@ import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { AuthProvider } from "@/lib/auth/context";
 
 export async function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return locales.map((locale) => ({ locale })) as { locale: string }[];
 }
 
 export async function generateMetadata({
@@ -28,9 +28,10 @@ export default async function LocaleLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: Locale }>;
+  params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale as Locale;
 
   // Validate locale
   if (!locales.includes(locale)) {

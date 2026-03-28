@@ -22,6 +22,8 @@ function AuthForm() {
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"buyer" | "seller">("buyer");
   const [formData, setFormData] = useState({
     name: "",
@@ -33,29 +35,24 @@ function AuthForm() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     setIsLoading(true);
-    const success = await login(formData.email, formData.password);
+    const { error } = await login(formData.email, formData.password);
     setIsLoading(false);
-    if (success) {
-      const returnUrl = searchParams.get("returnUrl") || `/${locale}`;
-      router.push(returnUrl);
-    }
+    if (error) { setAuthError(error); return; }
+    const returnUrl = searchParams.get("returnUrl") || `/${locale}`;
+    router.push(returnUrl);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.agreeTerms) return;
+    setAuthError(null);
     setIsLoading(true);
-    const success = await signup(
-      formData.name,
-      formData.email,
-      formData.password,
-      selectedRole
-    );
+    const { error } = await signup(formData.name, formData.email, formData.password, selectedRole);
     setIsLoading(false);
-    if (success) {
-      router.push(`/${locale}`);
-    }
+    if (error) { setAuthError(error); return; }
+    setSignupSuccess(true);
   };
 
   return (
@@ -151,6 +148,12 @@ function AuthForm() {
                     {t.auth.signInSubtitle}
                   </p>
                 </div>
+
+                {authError && (
+                  <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {authError}
+                  </div>
+                )}
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <FieldGroup>
@@ -273,6 +276,17 @@ function AuthForm() {
                     {t.auth.signUpSubtitle}
                   </p>
                 </div>
+
+                {signupSuccess && (
+                  <div className="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                    Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.
+                  </div>
+                )}
+                {authError && (
+                  <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {authError}
+                  </div>
+                )}
 
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <FieldGroup>

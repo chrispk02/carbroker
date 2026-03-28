@@ -27,6 +27,7 @@ export function SellCarsContent() {
   ];
 
   const authPath = `/${locale}/auth`;
+  const postCarPath = locale === 'vi' ? `/${locale}/ban-xe/dang-tin` : `/${locale}/sell-cars/post`;
 
   return (
     <>
@@ -43,7 +44,7 @@ export function SellCarsContent() {
           </p>
           <div className="mt-8 flex flex-col items-center gap-3">
             <Button size="lg" className="gap-2" asChild>
-              <Link href={isAuthenticated ? "/dashboard" : authPath}>
+              <Link href={isAuthenticated ? postCarPath : authPath}>
                 {isAuthenticated ? t.sellCars.ctaButton : t.sellCars.ctaButtonAuth}
                 <ArrowRight className="size-4" />
               </Link>

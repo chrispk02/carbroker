@@ -6,3 +6,12 @@ node_modules
 dist
 build
 .DS_Store
+*.tsbuildinfo
+
+# Chỉ push frontend — bỏ qua các folder khác
+.claude/
+supabase/
+
+# Claude Code — personal config
+.claude/CLAUDE.local.md
+.claude/settings.local.json

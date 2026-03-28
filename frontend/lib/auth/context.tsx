@@ -1,75 +1,137 @@
-"use client";
+"use client"
 
 import {
   createContext,
   useContext,
   useState,
+  useEffect,
   useCallback,
   type ReactNode,
-} from "react";
+} from "react"
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "buyer" | "seller";
-  avatar?: string;
+  id: string
+  name: string
+  email: string
+  role: "buyer" | "seller"
+  avatar?: string
 }
 
 interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, role: "buyer" | "seller") => Promise<boolean>;
-  logout: () => void;
+  user: User | null
+  session: Session | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<{ error: string | null }>
+  signup: (
+    name: string,
+    email: string,
+    password: string,
+    role: "buyer" | "seller"
+  ) => Promise<{ error: string | null }>
+  logout: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+function mapSupabaseUser(supabaseUser: SupabaseUser): User {
+  return {
+    id: supabaseUser.id,
+    name:
+      supabaseUser.user_metadata?.full_name ||
+      supabaseUser.email?.split("@")[0] ||
+      "Người dùng",
+    email: supabaseUser.email ?? "",
+    role: supabaseUser.user_metadata?.role ?? "buyer",
+    avatar: supabaseUser.user_metadata?.avatar_url,
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const supabase = createClient()
 
-  const login = useCallback(async (email: string, _password: string) => {
-    // Mock login - in production, this would call an API
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    
-    const mockUser: User = {
-      id: "1",
-      name: email.split("@")[0],
-      email,
-      role: "buyer",
-    };
-    setUser(mockUser);
-    return true;
-  }, []);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ? mapSupabaseUser(session.user) : null)
+      setIsLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ? mapSupabaseUser(session.user) : null)
+      setIsLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          return { error: "Email hoặc mật khẩu không đúng" }
+        }
+        if (error.message.includes("Email not confirmed")) {
+          return { error: "Vui lòng xác nhận email trước khi đăng nhập" }
+        }
+        return { error: error.message }
+      }
+      return { error: null }
+    },
+    [supabase]
+  )
 
   const signup = useCallback(
-    async (name: string, email: string, _password: string, role: "buyer" | "seller") => {
-      // Mock signup - in production, this would call an API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      const mockUser: User = {
-        id: "1",
-        name,
+    async (
+      name: string,
+      email: string,
+      password: string,
+      role: "buyer" | "seller"
+    ) => {
+      const { error } = await supabase.auth.signUp({
         email,
-        role,
-      };
-      setUser(mockUser);
-      return true;
+        password,
+        options: {
+          data: {
+            full_name: name,
+            role,
+          },
+        },
+      })
+      if (error) {
+        if (error.message.includes("already registered")) {
+          return { error: "Email này đã được đăng ký" }
+        }
+        if (error.message.includes("Password should be")) {
+          return { error: "Mật khẩu phải có ít nhất 6 ký tự" }
+        }
+        return { error: error.message }
+      }
+      return { error: null }
     },
-    []
-  );
+    [supabase]
+  )
 
-  const logout = useCallback(() => {
-    setUser(null);
-  }, []);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
+  }, [supabase])
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
         isAuthenticated: !!user,
+        isLoading,
         login,
         signup,
         logout,
@@ -77,13 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext)
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider")
   }
-  return context;
+  return context
 }
