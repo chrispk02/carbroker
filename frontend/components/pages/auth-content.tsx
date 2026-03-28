@@ -33,6 +33,15 @@ function AuthForm() {
     searchParams.get("tab") === "signup" ? "signup" : "signin"
   );
 
+  // URL-level error (from Supabase email callback)
+  const urlErrorCode = searchParams.get("error_code")
+  const urlErrorMessages: Record<string, string> = {
+    otp_expired:          locale === "vi" ? "Link xác nhận đã hết hạn. Vui lòng đăng ký lại hoặc yêu cầu gửi lại email." : "Confirmation link has expired. Please sign up again or resend the email.",
+    confirmation_failed:  locale === "vi" ? "Xác nhận email thất bại. Vui lòng thử lại." : "Email confirmation failed. Please try again.",
+    access_denied:        locale === "vi" ? "Truy cập bị từ chối. Link không hợp lệ hoặc đã hết hạn." : "Access denied. The link is invalid or has expired.",
+  }
+  const urlError = urlErrorCode ? (urlErrorMessages[urlErrorCode] ?? urlErrorMessages.confirmation_failed) : null
+
   // Shared
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -174,6 +183,12 @@ function AuthForm() {
 
         <div className="flex flex-1 items-center justify-center p-4 lg:p-8">
           <div className="w-full max-w-md">
+            {urlError && (
+              <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {urlError}
+              </div>
+            )}
+
             <Tabs value={tab} onValueChange={(v) => switchTab(v as "signin" | "signup")} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">{t.nav.signIn}</TabsTrigger>
