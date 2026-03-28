@@ -35,10 +35,11 @@ function getPreferredLocale(request: NextRequest): Locale {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip for static files and API routes
+  // Skip for static files, API routes, and auth callback
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/auth/callback") ||
     pathname.includes(".") ||
     pathname.startsWith("/icon") ||
     pathname.startsWith("/apple-icon")

@@ -32,6 +32,9 @@ interface AuthContextType {
     role: "buyer" | "seller"
   ) => Promise<{ error: string | null }>
   logout: () => Promise<void>
+  resendConfirmationEmail: (email: string) => Promise<{ error: string | null }>
+  sendPhoneOtp: (phone: string) => Promise<{ error: string | null }>
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -105,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             full_name: name,
             role,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
       if (error) {
@@ -125,6 +129,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }, [supabase])
 
+  const resendConfirmationEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    if (error) return { error: error.message }
+    return { error: null }
+  }, [supabase])
+
+  const sendPhoneOtp = useCallback(async (phone: string) => {
+    const { error } = await supabase.auth.updateUser({ phone })
+    if (error) {
+      if (error.message.includes('provider')) return { error: 'Tính năng xác thực SMS chưa được cấu hình.' }
+      return { error: error.message }
+    }
+    return { error: null }
+  }, [supabase])
+
+  const verifyPhoneOtp = useCallback(async (phone: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'phone_change' })
+    if (error) {
+      if (error.message.includes('invalid') || error.message.includes('expired')) {
+        return { error: 'Mã OTP không đúng hoặc đã hết hạn.' }
+      }
+      return { error: error.message }
+    }
+    return { error: null }
+  }, [supabase])
+
   return (
     <AuthContext.Provider
       value={{
@@ -135,6 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        resendConfirmationEmail,
+        sendPhoneOtp,
+        verifyPhoneOtp,
       }}
     >
       {children}

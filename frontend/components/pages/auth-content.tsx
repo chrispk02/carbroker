@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Shield, Car, Users } from "lucide-react";
+import { Shield, Car, Users, Mail, CheckCircle2, RotateCcw } from "lucide-react";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 function AuthForm() {
   const { locale, dictionary: t } = useLocale();
-  const { login, signup } = useAuth();
+  const { login, signup, resendConfirmationEmail } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
@@ -24,6 +24,8 @@ function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"buyer" | "seller">("buyer");
   const [formData, setFormData] = useState({
     name: "",
@@ -43,6 +45,14 @@ function AuthForm() {
     const returnUrl = searchParams.get("returnUrl") || `/${locale}`;
     router.push(returnUrl);
   };
+
+  const handleResendEmail = async () => {
+    setResendLoading(true)
+    await resendConfirmationEmail(formData.email)
+    setResendLoading(false)
+    setResendSent(true)
+    setTimeout(() => setResendSent(false), 60000)
+  }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,6 +278,51 @@ function AuthForm() {
 
               {/* Sign Up Form */}
               <TabsContent value="signup" className="mt-6">
+                {signupSuccess ? (
+                  <div className="py-4 text-center">
+                    <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                      <Mail className="size-8 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground">Kiểm tra email của bạn</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Chúng tôi đã gửi email xác nhận đến{" "}
+                      <span className="font-medium text-foreground">{formData.email}</span>
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Nhấn vào link trong email để kích hoạt tài khoản.
+                    </p>
+                    <div className="mt-6 rounded-lg border bg-secondary/50 px-4 py-3 text-left text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">Không nhận được email?</p>
+                      <ul className="mt-1 list-inside list-disc space-y-0.5">
+                        <li>Kiểm tra thư mục Spam / Junk</li>
+                        <li>Đợi 1–2 phút rồi thử lại</li>
+                      </ul>
+                    </div>
+                    {resendSent ? (
+                      <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-600">
+                        <CheckCircle2 className="size-4" />
+                        Email đã được gửi lại!
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleResendEmail}
+                        disabled={resendLoading}
+                        className="mt-4 flex items-center gap-2 mx-auto text-sm text-accent hover:underline disabled:opacity-50"
+                      >
+                        <RotateCcw className={cn("size-3.5", resendLoading && "animate-spin")} />
+                        {resendLoading ? "Đang gửi..." : "Gửi lại email xác nhận"}
+                      </button>
+                    )}
+                    <Button
+                      variant="outline"
+                      className="mt-6 w-full"
+                      onClick={() => { setSignupSuccess(false); setFormData({ name: "", email: "", password: "", rememberMe: false, agreeTerms: false }) }}
+                    >
+                      Đăng ký tài khoản khác
+                    </Button>
+                  </div>
+                ) : (
+                <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-foreground">
                     {t.auth.createAccount}
@@ -277,11 +332,6 @@ function AuthForm() {
                   </p>
                 </div>
 
-                {signupSuccess && (
-                  <div className="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
-                    Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.
-                  </div>
-                )}
                 {authError && (
                   <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                     {authError}
@@ -453,6 +503,8 @@ function AuthForm() {
                     {t.nav.signIn}
                   </Link>
                 </p>
+                </>
+                )}
               </TabsContent>
             </Tabs>
           </div>

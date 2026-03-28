@@ -38,6 +38,7 @@ export default async function ProfilePage({ params }: PageProps) {
       initialRole={(profile?.role ?? user.user_metadata?.role ?? 'buyer') as 'buyer' | 'seller'}
       initialAvatarUrl={profile?.avatar_url ?? null}
       createdAt={user.created_at}
+      phoneConfirmedAt={user.phone_confirmed_at ?? null}
     />
   )
 }

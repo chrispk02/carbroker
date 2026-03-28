@@ -2,15 +2,16 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Phone, Mail, Shield, Camera, Loader2, CheckCircle, Car, ShoppingBag } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { User, Phone, Mail, Shield, Camera, Loader2, CheckCircle, Car, ShoppingBag, ShieldCheck, KeyRound } from "lucide-react"
 import { useLocale } from "@/lib/i18n/locale-context"
+import { useAuth } from "@/lib/auth/context"
+import { createClient } from "@/lib/supabase/client"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -22,6 +23,7 @@ interface ProfileContentProps {
   initialRole: 'buyer' | 'seller'
   initialAvatarUrl: string | null
   createdAt: string
+  phoneConfirmedAt: string | null
 }
 
 export function ProfileContent({
@@ -32,8 +34,10 @@ export function ProfileContent({
   initialRole,
   initialAvatarUrl,
   createdAt,
+  phoneConfirmedAt,
 }: ProfileContentProps) {
   const { locale, dictionary: t } = useLocale()
+  const { sendPhoneOtp, verifyPhoneOtp } = useAuth()
   const router = useRouter()
   const supabase = createClient()
 
@@ -46,6 +50,13 @@ export function ProfileContent({
   const [uploading, setUploading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Phone OTP state
+  const [phoneVerified, setPhoneVerified] = useState(!!phoneConfirmedAt)
+  const [otpSent, setOtpSent] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState<string | null>(null)
 
   const memberSince = new Date(createdAt).toLocaleDateString('vi-VN', {
     year: 'numeric',
@@ -125,6 +136,37 @@ export function ProfileContent({
     router.refresh()
   }
 
+  async function handleSendOtp() {
+    if (!phone.trim()) {
+      setOtpError('Vui lòng nhập số điện thoại trước.')
+      return
+    }
+    setOtpLoading(true)
+    setOtpError(null)
+    const { error: err } = await sendPhoneOtp(phone.trim())
+    setOtpLoading(false)
+    if (err) {
+      setOtpError(err)
+      return
+    }
+    setOtpSent(true)
+  }
+
+  async function handleVerifyOtp() {
+    if (!otp.trim()) return
+    setOtpLoading(true)
+    setOtpError(null)
+    const { error: err } = await verifyPhoneOtp(phone.trim(), otp.trim())
+    setOtpLoading(false)
+    if (err) {
+      setOtpError(err)
+      return
+    }
+    setPhoneVerified(true)
+    setOtpSent(false)
+    setOtp('')
+  }
+
   return (
     <>
       <SiteHeader />
@@ -170,10 +212,16 @@ export function ProfileContent({
                     <p className="text-lg font-semibold text-foreground">{fullName || 'Người dùng'}</p>
                     <p className="text-sm text-muted-foreground">{email}</p>
                     <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
-                      <Badge variant="secondary" className="gap-1 text-xs">
-                        <Shield className="size-3" />
-                        Đã xác minh email
+                      <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
+                        <ShieldCheck className="size-3" />
+                        Email đã xác thực
                       </Badge>
+                      {phoneVerified && (
+                        <Badge variant="secondary" className="gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
+                          <ShieldCheck className="size-3" />
+                          SĐT đã xác thực
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="gap-1 text-xs">
                         Thành viên từ {memberSince}
                       </Badge>
@@ -214,13 +262,77 @@ export function ProfileContent({
                   <Label className="flex items-center gap-1.5">
                     <Phone className="size-3.5 text-muted-foreground" />
                     Số điện thoại
+                    {phoneVerified && (
+                      <Badge variant="secondary" className="ml-1 gap-1 text-xs text-emerald-600 border-emerald-200 bg-emerald-50">
+                        <ShieldCheck className="size-3" />
+                        Đã xác thực
+                      </Badge>
+                    )}
                   </Label>
-                  <Input
-                    placeholder="VD: 0912 345 678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    type="tel"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="VD: +84912345678"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setPhoneVerified(false); setOtpSent(false); setOtp('') }}
+                      type="tel"
+                      className="flex-1"
+                    />
+                    {!phoneVerified && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={otpLoading || !phone.trim()}
+                        onClick={handleSendOtp}
+                        className="shrink-0"
+                      >
+                        {otpLoading && !otpSent ? <Loader2 className="size-3.5 animate-spin" /> : 'Gửi mã'}
+                      </Button>
+                    )}
+                  </div>
+                  {otpSent && !phoneVerified && (
+                    <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        Nhập mã OTP đã gửi đến <span className="font-medium">{phone}</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nhập mã OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value)}
+                          maxLength={6}
+                          className="flex-1 text-center tracking-widest text-lg font-mono"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={otpLoading || otp.length < 4}
+                          onClick={handleVerifyOtp}
+                          className="shrink-0"
+                        >
+                          {otpLoading ? <Loader2 className="size-3.5 animate-spin" /> : <><KeyRound className="mr-1.5 size-3.5" />Xác nhận</>}
+                        </Button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={otpLoading}
+                        className="text-xs text-accent hover:underline disabled:opacity-50"
+                      >
+                        Gửi lại mã
+                      </button>
+                    </div>
+                  )}
+                  {otpError && (
+                    <p className="text-xs text-destructive">{otpError}</p>
+                  )}
+                  {phoneVerified && (
+                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                      <CheckCircle className="size-3" />
+                      Số điện thoại đã được xác thực thành công
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">Định dạng quốc tế: +84912345678</p>
                 </div>
               </CardContent>
             </Card>
