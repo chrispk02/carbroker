@@ -120,14 +120,32 @@ export async function getAdminData(): Promise<AdminData> {
     { data: cars },
     { data: views },
     { data: { users: authUsers } },
-    { data: kycRows },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, phone, role, is_admin, created_at').order('created_at', { ascending: false }),
     supabase.from('cars').select('id, slug, title, brand, price_vnd, year, status, verified, created_at, seller_id').order('created_at', { ascending: false }),
     supabase.from('car_views').select('car_id, viewed_at'),
     supabase.auth.admin.listUsers({ perPage: 1000 }),
-    supabase.from('seller_kyc').select('*').order('submitted_at', { ascending: false }),
   ])
+
+  // Fetch KYC separately — table may not exist until migration 005 is run
+  interface RawKyc {
+    id: string; user_id: string; seller_type: 'individual' | 'business'
+    cccd_number: string | null; cccd_name: string | null; cccd_dob: string | null
+    cccd_address: string | null; cccd_front_path: string | null; cccd_back_path: string | null
+    business_name: string | null; business_tax_id: string | null; business_address: string | null
+    business_license_path: string | null; status: 'pending' | 'reviewing' | 'approved' | 'rejected'
+    reject_reason: string | null; submitted_at: string
+  }
+  let kycRows: RawKyc[] = []
+  try {
+    const { data } = await supabase
+      .from('seller_kyc')
+      .select('*')
+      .order('submitted_at', { ascending: false })
+    kycRows = (data ?? []) as RawKyc[]
+  } catch {
+    // Table not yet migrated — admin page still works, KYC tab shows empty
+  }
 
   // ── Email map ────────────────────────────────────────────────
   const emailMap = new Map<string, string>()
