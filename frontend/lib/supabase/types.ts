@@ -8,6 +8,7 @@ export type Database = {
           phone: string | null
           role: 'buyer' | 'seller'
           avatar_url: string | null
+          is_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -17,6 +18,7 @@ export type Database = {
           phone?: string | null
           role?: 'buyer' | 'seller'
           avatar_url?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -25,6 +27,7 @@ export type Database = {
           phone?: string | null
           role?: 'buyer' | 'seller'
           avatar_url?: string | null
+          is_admin?: boolean
           updated_at?: string
         }
         Relationships: []

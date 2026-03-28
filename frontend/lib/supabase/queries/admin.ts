@@ -1,0 +1,162 @@
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export interface AdminUser {
+  id: string
+  full_name: string | null
+  email: string
+  phone: string | null
+  role: 'buyer' | 'seller'
+  is_admin: boolean
+  created_at: string
+  car_count: number
+}
+
+export interface AdminCar {
+  id: string
+  slug: string
+  title: string
+  brand: string
+  price_vnd: number
+  year: number
+  status: string
+  verified: boolean
+  created_at: string
+  seller_name: string | null
+  seller_email: string
+  view_count: number
+}
+
+export interface AdminStats {
+  totalUsers: number
+  totalSellers: number
+  totalBuyers: number
+  totalCars: number
+  activeCars: number
+  soldCars: number
+  totalViews: number
+  newUsersToday: number
+  newCarsToday: number
+}
+
+export interface GrowthPoint {
+  date: string
+  users: number
+  cars: number
+}
+
+export interface AdminData {
+  stats: AdminStats
+  users: AdminUser[]
+  cars: AdminCar[]
+  growth: GrowthPoint[]
+}
+
+export async function getAdminData(): Promise<AdminData> {
+  const supabase = createAdminClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  // ── Fetch all data in parallel ──────────────────────────────
+  const [
+    { data: profiles },
+    { data: cars },
+    { data: views },
+    { data: { users: authUsers } },
+  ] = await Promise.all([
+    supabase.from('profiles').select('id, full_name, phone, role, is_admin, created_at').order('created_at', { ascending: false }),
+    supabase.from('cars').select('id, slug, title, brand, price_vnd, year, status, verified, created_at, seller_id').order('created_at', { ascending: false }),
+    supabase.from('car_views').select('car_id, viewed_at'),
+    supabase.auth.admin.listUsers({ perPage: 1000 }),
+  ])
+
+  // ── Email map ────────────────────────────────────────────────
+  const emailMap = new Map<string, string>()
+  for (const u of authUsers ?? []) {
+    emailMap.set(u.id, u.email ?? '')
+  }
+
+  // ── Car count per user ───────────────────────────────────────
+  const carCountMap = new Map<string, number>()
+  for (const car of cars ?? []) {
+    carCountMap.set(car.seller_id, (carCountMap.get(car.seller_id) ?? 0) + 1)
+  }
+
+  // ── View count per car ───────────────────────────────────────
+  const viewCountMap = new Map<string, number>()
+  for (const v of views ?? []) {
+    viewCountMap.set(v.car_id, (viewCountMap.get(v.car_id) ?? 0) + 1)
+  }
+
+  // ── Seller name map ──────────────────────────────────────────
+  const sellerNameMap = new Map<string, string | null>()
+  for (const p of profiles ?? []) {
+    sellerNameMap.set(p.id, p.full_name)
+  }
+
+  // ── Stats ────────────────────────────────────────────────────
+  const totalUsers = profiles?.length ?? 0
+  const totalSellers = profiles?.filter(p => p.role === 'seller').length ?? 0
+  const totalCars = cars?.length ?? 0
+  const activeCars = cars?.filter(c => c.status === 'active').length ?? 0
+  const soldCars = cars?.filter(c => c.status === 'sold').length ?? 0
+  const totalViews = views?.length ?? 0
+  const newUsersToday = profiles?.filter(p => p.created_at.startsWith(today)).length ?? 0
+  const newCarsToday = cars?.filter(c => c.created_at.startsWith(today)).length ?? 0
+
+  // ── Growth data (last 14 days) ───────────────────────────────
+  const growth: GrowthPoint[] = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split('T')[0]
+    growth.push({
+      date: dateStr,
+      users: profiles?.filter(p => p.created_at.startsWith(dateStr)).length ?? 0,
+      cars: cars?.filter(c => c.created_at.startsWith(dateStr)).length ?? 0,
+    })
+  }
+
+  // ── Users list ───────────────────────────────────────────────
+  const adminUsers: AdminUser[] = (profiles ?? []).map(p => ({
+    id: p.id,
+    full_name: p.full_name,
+    email: emailMap.get(p.id) ?? '',
+    phone: p.phone,
+    role: p.role,
+    is_admin: p.is_admin ?? false,
+    created_at: p.created_at,
+    car_count: carCountMap.get(p.id) ?? 0,
+  }))
+
+  // ── Cars list ────────────────────────────────────────────────
+  const adminCars: AdminCar[] = (cars ?? []).map(c => ({
+    id: c.id,
+    slug: c.slug,
+    title: c.title,
+    brand: c.brand,
+    price_vnd: c.price_vnd,
+    year: c.year,
+    status: c.status,
+    verified: c.verified ?? false,
+    created_at: c.created_at,
+    seller_name: sellerNameMap.get(c.seller_id) ?? null,
+    seller_email: emailMap.get(c.seller_id) ?? '',
+    view_count: viewCountMap.get(c.id) ?? 0,
+  }))
+
+  return {
+    stats: {
+      totalUsers,
+      totalSellers,
+      totalBuyers: totalUsers - totalSellers,
+      totalCars,
+      activeCars,
+      soldCars,
+      totalViews,
+      newUsersToday,
+      newCarsToday,
+    },
+    users: adminUsers,
+    cars: adminCars,
+    growth,
+  }
+}
