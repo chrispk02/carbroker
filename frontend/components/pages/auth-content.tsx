@@ -292,6 +292,12 @@ function AuthForm() {
                         <li>{t.auth.waitAndRetry}</li>
                       </ul>
                     </div>
+                    {selectedRole === 'seller' && (
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 px-4 py-3 text-left text-xs">
+                        <p className="font-medium text-amber-800 dark:text-amber-300">{t.kyc.kycRequired}</p>
+                        <p className="mt-0.5 text-amber-700 dark:text-amber-400">{t.kyc.kycRequiredDesc}</p>
+                      </div>
+                    )}
                     {resendSent ? (
                       <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-600">
                         <CheckCircle2 className="size-4" /> {t.auth.emailResent}

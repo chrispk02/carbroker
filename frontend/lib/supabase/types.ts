@@ -163,6 +163,69 @@ export type Database = {
         Update: { value?: Record<string, unknown>; updated_at?: string }
         Relationships: []
       }
+      seller_kyc: {
+        Row: {
+          id: string
+          user_id: string
+          seller_type: 'individual' | 'business'
+          cccd_number: string | null
+          cccd_name: string | null
+          cccd_dob: string | null
+          cccd_address: string | null
+          cccd_front_path: string | null
+          cccd_back_path: string | null
+          business_name: string | null
+          business_tax_id: string | null
+          business_address: string | null
+          business_license_path: string | null
+          status: 'pending' | 'reviewing' | 'approved' | 'rejected'
+          reject_reason: string | null
+          submitted_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          seller_type: 'individual' | 'business'
+          cccd_number?: string | null
+          cccd_name?: string | null
+          cccd_dob?: string | null
+          cccd_address?: string | null
+          cccd_front_path?: string | null
+          cccd_back_path?: string | null
+          business_name?: string | null
+          business_tax_id?: string | null
+          business_address?: string | null
+          business_license_path?: string | null
+          status?: 'pending' | 'reviewing' | 'approved' | 'rejected'
+          reject_reason?: string | null
+          submitted_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Update: {
+          seller_type?: 'individual' | 'business'
+          cccd_number?: string | null
+          cccd_name?: string | null
+          cccd_dob?: string | null
+          cccd_address?: string | null
+          cccd_front_path?: string | null
+          cccd_back_path?: string | null
+          business_name?: string | null
+          business_tax_id?: string | null
+          business_address?: string | null
+          business_license_path?: string | null
+          status?: 'pending' | 'reviewing' | 'approved' | 'rejected'
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

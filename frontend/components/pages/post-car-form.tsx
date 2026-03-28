@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, X, Plus, Loader2, CheckCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -64,7 +64,10 @@ interface ImageFile {
 export function PostCarForm() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading } = useAuth()
-  const { locale } = useLocale()
+  const { locale, dictionary: t } = useLocale()
+
+  // KYC guard
+  const [kycStatus, setKycStatus] = useState<string | 'loading'>('loading')
 
   // Form fields
   const [brand, setBrand] = useState('')
@@ -90,7 +93,20 @@ export function PostCarForm() {
   const [error, setError] = useState<string | null>(null)
 
   const authPath = `/${locale}/auth`
+  const verifyPath = locale === 'vi' ? `/${locale}/xac-minh` : `/${locale}/verify-seller`
   const supabase = createClient()
+
+  // Fetch KYC status for sellers
+  useEffect(() => {
+    if (!user) return
+    if (user.role !== 'seller') { setKycStatus('none'); return }
+    supabase
+      .from('seller_kyc')
+      .select('status')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setKycStatus(data?.status ?? 'none'))
+  }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleFeature(feature: string) {
     setSelectedFeatures((prev) =>
@@ -250,6 +266,43 @@ export function PostCarForm() {
           <Button asChild size="lg">
             <Link href={authPath}>Đăng nhập / Đăng ký</Link>
           </Button>
+        </div>
+        <SiteFooter />
+      </>
+    )
+  }
+
+  // KYC guard for sellers
+  if (user?.role === 'seller' && kycStatus !== 'none' && kycStatus !== 'approved') {
+    const isPending = kycStatus === 'pending' || kycStatus === 'reviewing'
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+            <CheckCircle className="size-8 text-amber-600" />
+          </div>
+          <h2 className="text-2xl font-bold">{t.kyc.kycRequired}</h2>
+          <p className="max-w-sm text-muted-foreground">
+            {isPending ? t.kyc.kycPending : t.kyc.kycRejected}
+          </p>
+          {!isPending && (
+            <Button asChild size="lg">
+              <Link href={verifyPath}>{t.kyc.goVerify}</Link>
+            </Button>
+          )}
+        </div>
+        <SiteFooter />
+      </>
+    )
+  }
+
+  if (user?.role === 'seller' && kycStatus === 'loading') {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
         <SiteFooter />
       </>

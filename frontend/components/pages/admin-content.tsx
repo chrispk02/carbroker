@@ -13,7 +13,7 @@ import {
   Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
   AreaChart, Area,
 } from 'recharts'
-import type { AdminData, AdminUser, AdminCar, SiteConfig } from '@/lib/supabase/queries/admin'
+import type { AdminData, AdminUser, AdminCar, AdminKyc, SiteConfig } from '@/lib/supabase/queries/admin'
 import { SiteHeader } from '@/components/site-header'
 import { useLocale } from '@/lib/i18n/locale-context'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -89,7 +89,7 @@ interface Props { data: AdminData; siteConfig: SiteConfig }
 export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
   const { dictionary: t } = useLocale()
   const { stats, growth } = data
-  const [tab, setTab] = useState<'overview' | 'users' | 'cars' | 'content'>('overview')
+  const [tab, setTab] = useState<'overview' | 'users' | 'cars' | 'content' | 'kyc'>('overview')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -97,6 +97,16 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
   const [cars, setCars] = useState<AdminCar[]>(data.cars)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+
+  // ── KYC state ────────────────────────────────────────────
+  const [kyc, setKyc] = useState<AdminKyc[]>(data.kyc)
+  const [kycFilter, setKycFilter] = useState<string>('all')
+  const [kycSelected, setKycSelected] = useState<AdminKyc | null>(null)
+  const [kycDocUrls, setKycDocUrls] = useState<Record<string, string>>({})
+  const [kycLoadingDocs, setKycLoadingDocs] = useState(false)
+  const [kycRejectMode, setKycRejectMode] = useState(false)
+  const [kycRejectReason, setKycRejectReason] = useState('')
+  const [kycActionLoading, setKycActionLoading] = useState(false)
 
   // ── Create user modal state ───────────────────────────────
   const [showCreateUser, setShowCreateUser] = useState(false)
@@ -288,11 +298,58 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
     },
   ] as const
 
+  // ── KYC helpers ──────────────────────────────────────────
+  const pendingKycCount = kyc.filter(k => k.status === 'pending').length
+
+  async function openKycDocs(item: AdminKyc) {
+    setKycSelected(item)
+    setKycRejectMode(false)
+    setKycRejectReason('')
+    const paths = [item.cccd_front_path, item.cccd_back_path, item.business_license_path]
+      .filter(Boolean) as string[]
+    if (!paths.length) return
+    setKycLoadingDocs(true)
+    const params = paths.map(p => `path=${encodeURIComponent(p)}`).join('&')
+    const res = await fetch(`/api/admin/kyc-sign?${params}`)
+    const json = await res.json() as { urls: Record<string, string> }
+    setKycDocUrls(json.urls ?? {})
+    setKycLoadingDocs(false)
+  }
+
+  async function handleKycReview(action: 'approve' | 'reject') {
+    if (!kycSelected) return
+    setKycActionLoading(true)
+    const res = await fetch('/api/admin/kyc-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kycId: kycSelected.id, action, rejectReason: kycRejectReason }),
+    })
+    if (res.ok) {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected'
+      setKyc(prev => prev.map(k =>
+        k.id === kycSelected.id ? { ...k, status: newStatus, reject_reason: kycRejectReason || null } : k
+      ))
+      setKycSelected(prev => prev ? { ...prev, status: newStatus as AdminKyc['status'] } : null)
+      setKycRejectMode(false)
+    }
+    setKycActionLoading(false)
+  }
+
+  const filteredKyc = kycFilter === 'all' ? kyc : kyc.filter(k => k.status === kycFilter)
+
+  const kycStatusStyle: Record<string, { label: string; color: string }> = {
+    pending:   { label: t.kyc.statusPending,   color: 'bg-amber-100 text-amber-700' },
+    reviewing: { label: t.kyc.statusReviewing, color: 'bg-blue-100 text-blue-700' },
+    approved:  { label: t.kyc.statusApproved,  color: 'bg-emerald-100 text-emerald-700' },
+    rejected:  { label: t.kyc.statusRejected,  color: 'bg-red-100 text-red-700' },
+  }
+
   const tabs = [
     { key: 'overview', label: t.admin.tabOverview,                      icon: BarChart3 },
     { key: 'users',    label: `${t.admin.colUser} (${users.length})`,   icon: Users },
     { key: 'cars',     label: `${t.admin.colListing} (${cars.length})`, icon: Car },
     { key: 'content',  label: t.admin.tabContent,                       icon: ShieldCheck },
+    { key: 'kyc',      label: `${t.kyc.adminTabKyc}${pendingKycCount ? ` (${pendingKycCount})` : ''}`, icon: UserCheck },
   ] as const
 
   return (
@@ -922,6 +979,194 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* ── KYC Tab ── */}
+          {tab === 'kyc' && (
+            <div className="space-y-4">
+              {/* Filter */}
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'pending', 'reviewing', 'approved', 'rejected'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setKycFilter(f)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      kycFilter === f ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {f === 'all' ? t.kyc.adminKycAll
+                      : f === 'pending' ? `${t.kyc.adminKycPending} (${kyc.filter(k => k.status === 'pending').length})`
+                      : f === 'reviewing' ? t.kyc.adminKycReviewing
+                      : f === 'approved' ? t.kyc.adminKycApproved
+                      : t.kyc.adminKycRejected}
+                  </button>
+                ))}
+              </div>
+
+              {/* Table */}
+              <div className="overflow-hidden rounded-xl border bg-card">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{t.admin.colUser}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{t.kyc.adminColType}</th>
+                      <th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">{t.kyc.adminColSubmitted}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{t.admin.colStatus}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">{t.admin.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredKyc.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">—</td>
+                      </tr>
+                    ) : filteredKyc.map(item => {
+                      const style = kycStatusStyle[item.status]
+                      return (
+                        <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-foreground">{item.user_full_name ?? '—'}</p>
+                            <p className="text-xs text-muted-foreground">{item.user_email}</p>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {item.seller_type === 'individual' ? t.kyc.typeIndividual : t.kyc.typeBusiness}
+                          </td>
+                          <td className="hidden px-4 py-3 text-xs text-muted-foreground sm:table-cell">
+                            {formatDate(item.submitted_at)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${style.color}`}>
+                              {style.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => openKycDocs(item)}
+                              className="rounded-lg bg-secondary px-2.5 py-1 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                            >
+                              {t.kyc.adminKycViewDocs}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Document viewer modal */}
+              {kycSelected && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                  <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-background shadow-2xl">
+                    <div className="flex items-center justify-between border-b px-6 py-4">
+                      <div>
+                        <p className="font-semibold text-foreground">{kycSelected.user_full_name ?? kycSelected.user_email}</p>
+                        <p className="text-xs text-muted-foreground">{kycSelected.user_email} · {kycSelected.seller_type === 'individual' ? t.kyc.typeIndividual : t.kyc.typeBusiness}</p>
+                      </div>
+                      <button onClick={() => setKycSelected(null)} className="rounded-lg p-1 hover:bg-muted transition-colors">
+                        <EyeOff className="size-4 text-muted-foreground" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-5 p-6">
+                      {/* Info */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl border bg-muted/30 p-4 text-sm">
+                        {kycSelected.cccd_number && <><span className="text-muted-foreground">{t.kyc.cccdNumber}</span><span className="font-medium">{kycSelected.cccd_number}</span></>}
+                        {kycSelected.cccd_name   && <><span className="text-muted-foreground">{t.kyc.cccdName}</span><span className="font-medium">{kycSelected.cccd_name}</span></>}
+                        {kycSelected.cccd_dob    && <><span className="text-muted-foreground">{t.kyc.cccdDob}</span><span>{kycSelected.cccd_dob}</span></>}
+                        {kycSelected.cccd_address && <><span className="text-muted-foreground">{t.kyc.cccdAddress}</span><span>{kycSelected.cccd_address}</span></>}
+                        {kycSelected.business_name    && <><span className="text-muted-foreground">{t.kyc.businessName}</span><span className="font-medium">{kycSelected.business_name}</span></>}
+                        {kycSelected.business_tax_id  && <><span className="text-muted-foreground">{t.kyc.businessTaxId}</span><span>{kycSelected.business_tax_id}</span></>}
+                        {kycSelected.business_address && <><span className="text-muted-foreground">{t.kyc.businessAddress}</span><span>{kycSelected.business_address}</span></>}
+                      </div>
+
+                      {/* Documents */}
+                      {kycLoadingDocs ? (
+                        <div className="flex justify-center py-6"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {[
+                            { path: kycSelected.cccd_front_path, label: t.kyc.cccdFront },
+                            { path: kycSelected.cccd_back_path,  label: t.kyc.cccdBack },
+                            { path: kycSelected.business_license_path, label: t.kyc.businessLicense },
+                          ].filter(d => d.path).map(({ path, label }) => (
+                            <div key={path}>
+                              <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+                              {kycDocUrls[path!] ? (
+                                <a href={kycDocUrls[path!]} target="_blank" rel="noopener noreferrer">
+                                  <img src={kycDocUrls[path!]} alt={label} className="w-full rounded-xl border object-cover hover:opacity-90 transition-opacity" />
+                                </a>
+                              ) : (
+                                <div className="flex h-24 items-center justify-center rounded-xl border bg-muted/50 text-xs text-muted-foreground">
+                                  {path}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Current status */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Status:</span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${kycStatusStyle[kycSelected.status].color}`}>
+                          {kycStatusStyle[kycSelected.status].label}
+                        </span>
+                        {kycSelected.reject_reason && (
+                          <span className="text-xs text-destructive">— {kycSelected.reject_reason}</span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {(kycSelected.status === 'pending' || kycSelected.status === 'reviewing') && !kycRejectMode && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleKycReview('approve')}
+                            disabled={kycActionLoading}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-60 transition-colors"
+                          >
+                            {kycActionLoading ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+                            {t.kyc.adminKycApprove}
+                          </button>
+                          <button
+                            onClick={() => setKycRejectMode(true)}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/20 transition-colors"
+                          >
+                            {t.kyc.adminKycReject}
+                          </button>
+                        </div>
+                      )}
+
+                      {kycRejectMode && (
+                        <div className="space-y-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+                          <p className="text-sm font-medium text-foreground">{t.kyc.adminKycRejectReason}</p>
+                          <textarea
+                            value={kycRejectReason}
+                            onChange={e => setKycRejectReason(e.target.value)}
+                            placeholder={t.kyc.adminKycRejectPlaceholder}
+                            rows={3}
+                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleKycReview('reject')}
+                              disabled={!kycRejectReason.trim() || kycActionLoading}
+                              className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 disabled:opacity-60 transition-colors"
+                            >
+                              {kycActionLoading && <Loader2 className="size-3.5 animate-spin" />}
+                              {t.kyc.adminKycReject}
+                            </button>
+                            <button onClick={() => setKycRejectMode(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-muted transition-colors">
+                              {t.kyc.back}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
         </div>

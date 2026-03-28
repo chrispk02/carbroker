@@ -26,6 +26,27 @@ export interface AdminCar {
   view_count: number
 }
 
+export interface AdminKyc {
+  id: string
+  user_id: string
+  seller_type: 'individual' | 'business'
+  cccd_number: string | null
+  cccd_name: string | null
+  cccd_dob: string | null
+  cccd_address: string | null
+  cccd_front_path: string | null
+  cccd_back_path: string | null
+  business_name: string | null
+  business_tax_id: string | null
+  business_address: string | null
+  business_license_path: string | null
+  status: 'pending' | 'reviewing' | 'approved' | 'rejected'
+  reject_reason: string | null
+  submitted_at: string
+  user_email: string
+  user_full_name: string | null
+}
+
 export interface AdminStats {
   totalUsers: number
   totalSellers: number
@@ -49,6 +70,7 @@ export interface AdminData {
   users: AdminUser[]
   cars: AdminCar[]
   growth: GrowthPoint[]
+  kyc: AdminKyc[]
 }
 
 export interface SiteConfig {
@@ -98,11 +120,13 @@ export async function getAdminData(): Promise<AdminData> {
     { data: cars },
     { data: views },
     { data: { users: authUsers } },
+    { data: kycRows },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, phone, role, is_admin, created_at').order('created_at', { ascending: false }),
     supabase.from('cars').select('id, slug, title, brand, price_vnd, year, status, verified, created_at, seller_id').order('created_at', { ascending: false }),
     supabase.from('car_views').select('car_id, viewed_at'),
     supabase.auth.admin.listUsers({ perPage: 1000 }),
+    supabase.from('seller_kyc').select('*').order('submitted_at', { ascending: false }),
   ])
 
   // ── Email map ────────────────────────────────────────────────
@@ -180,6 +204,28 @@ export async function getAdminData(): Promise<AdminData> {
     view_count: viewCountMap.get(c.id) ?? 0,
   }))
 
+  // ── KYC list ─────────────────────────────────────────────────
+  const adminKyc: AdminKyc[] = (kycRows ?? []).map(k => ({
+    id: k.id,
+    user_id: k.user_id,
+    seller_type: k.seller_type,
+    cccd_number: k.cccd_number,
+    cccd_name: k.cccd_name,
+    cccd_dob: k.cccd_dob,
+    cccd_address: k.cccd_address,
+    cccd_front_path: k.cccd_front_path,
+    cccd_back_path: k.cccd_back_path,
+    business_name: k.business_name,
+    business_tax_id: k.business_tax_id,
+    business_address: k.business_address,
+    business_license_path: k.business_license_path,
+    status: k.status,
+    reject_reason: k.reject_reason,
+    submitted_at: k.submitted_at,
+    user_email: emailMap.get(k.user_id) ?? '',
+    user_full_name: (profiles ?? []).find(p => p.id === k.user_id)?.full_name ?? null,
+  }))
+
   return {
     stats: {
       totalUsers,
@@ -195,5 +241,6 @@ export async function getAdminData(): Promise<AdminData> {
     users: adminUsers,
     cars: adminCars,
     growth,
+    kyc: adminKyc,
   }
 }

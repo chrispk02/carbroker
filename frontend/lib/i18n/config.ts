@@ -33,6 +33,14 @@ export const routeMappings: Record<string, Record<Locale, string>> = {
     en: "car",
     vi: "xe",
   },
+  "verify-seller": {
+    en: "verify-seller",
+    vi: "xac-minh",
+  },
+  "xac-minh": {
+    en: "verify-seller",
+    vi: "xac-minh",
+  },
 };
 
 // Get the localized path for a given route
