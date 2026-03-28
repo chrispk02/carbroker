@@ -138,42 +138,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase])
 
   const sendPhoneOtp = useCallback(async (phone: string) => {
-    const { error } = await supabase.auth.updateUser({ phone })
-    if (error) {
-      if (error.message.includes('provider')) return { error: 'Tính năng xác thực SMS chưa được cấu hình.' }
-      return { error: error.message }
-    }
+    const res = await fetch('/api/otp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { error: data.error ?? 'Không thể gửi OTP' }
     return { error: null }
-  }, [supabase])
+  }, [])
 
   const verifyPhoneOtp = useCallback(async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'phone_change' })
-    if (error) {
-      if (error.message.includes('invalid') || error.message.includes('expired')) {
-        return { error: 'Mã OTP không đúng hoặc đã hết hạn.' }
-      }
-      return { error: error.message }
-    }
+    const res = await fetch('/api/otp/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp: token, loginMode: false }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { error: data.error ?? 'Mã OTP không đúng' }
     return { error: null }
-  }, [supabase])
+  }, [])
 
   const sendLoginOtp = useCallback(async (phone: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ phone })
-    if (error) {
-      if (error.message.includes('provider')) return { error: 'Tính năng đăng nhập SMS chưa được cấu hình.' }
-      return { error: error.message }
-    }
+    const res = await fetch('/api/otp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { error: data.error ?? 'Không thể gửi OTP' }
     return { error: null }
-  }, [supabase])
+  }, [])
 
   const verifyLoginOtp = useCallback(async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
-    if (error) {
-      if (error.message.includes('invalid') || error.message.includes('expired')) {
-        return { error: 'Mã OTP không đúng hoặc đã hết hạn.' }
-      }
-      return { error: error.message }
-    }
+    const res = await fetch('/api/otp/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp: token, loginMode: true }),
+    })
+    const data = await res.json()
+    if (!res.ok) return { error: data.error ?? 'Mã OTP không đúng' }
+
+    // Exchange token_hash lấy Supabase session
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: data.token_hash,
+      type: 'magiclink',
+    })
+    if (error) return { error: error.message }
     return { error: null }
   }, [supabase])
 

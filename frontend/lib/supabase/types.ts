@@ -134,6 +134,12 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_otps: {
+        Row: { id: string; phone: string; otp_hash: string; expires_at: string; used: boolean; created_at: string }
+        Insert: { id?: string; phone: string; otp_hash: string; expires_at?: string; used?: boolean; created_at?: string }
+        Update: { used?: boolean }
+        Relationships: []
+      }
       car_views: {
         Row: {
           id: string
