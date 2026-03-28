@@ -21,8 +21,22 @@ export async function POST(req: NextRequest) {
   await admin.from('cars').delete().eq('seller_id', userId)
   await admin.from('profiles').delete().eq('id', userId)
 
-  const { error } = await admin.auth.admin.deleteUser(userId)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Use REST API directly — more reliable than JS client for auth admin operations
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${userId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      },
+    }
+  )
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    return NextResponse.json({ error: body.msg ?? body.message ?? 'Xoá thất bại' }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }
