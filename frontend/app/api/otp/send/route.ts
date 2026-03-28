@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (!smsRes.ok || smsData?.status !== 'success') {
     console.error('[otp/send] speedsms error:', smsData)
     return NextResponse.json(
-      { error: 'Không thể gửi SMS. Vui lòng thử lại sau.' },
+      { error: `SpeedSMS error: ${JSON.stringify(smsData)}` },
       { status: 502 }
     )
   }
