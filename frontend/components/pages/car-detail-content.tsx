@@ -20,6 +20,8 @@ import { Separator } from "@/components/ui/separator"
 import { CarImageGallery } from "@/components/car-image-gallery"
 import { CarFeatures } from "@/components/car-features"
 import { TrustBox } from "@/components/trust-box"
+import { InsuranceSelector } from "@/components/insurance-selector"
+import { LoanCalculator } from "@/components/loan-calculator"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { useAuth } from "@/lib/auth/context"
 import { formatVND, formatVNDFull, formatKm } from "@/lib/utils/format-price"
@@ -231,6 +233,12 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             <TrustBox />
           </div>
         </div>
+      </div>
+
+      {/* ─── Finance & Insurance ─── */}
+      <div className="mt-10 space-y-6">
+        <InsuranceSelector carPriceVND={car.priceVND} />
+        <LoanCalculator carPriceVND={car.priceVND} />
       </div>
     </main>
   )
