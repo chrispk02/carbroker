@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Locale } from '@/lib/i18n/config'
 import { createClient } from '@/lib/supabase/server'
-import { getAdminData } from '@/lib/supabase/queries/admin'
+import { getAdminData, getSiteConfig } from '@/lib/supabase/queries/admin'
 import { AdminContent } from '@/components/pages/admin-content'
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export default async function AdminPage({ params }: PageProps) {
 
   if (!profile?.is_admin) redirect(`/${locale}`)
 
-  const data = await getAdminData()
+  const [data, siteConfig] = await Promise.all([getAdminData(), getSiteConfig()])
 
-  return <AdminContent data={data} />
+  return <AdminContent data={data} siteConfig={siteConfig} />
 }

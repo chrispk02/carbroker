@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,18 +25,13 @@ const languageFlags: Record<Locale, string> = {
 export function LanguageSwitcher() {
   const { locale } = useLocale();
   const pathname = usePathname();
-  const router = useRouter();
 
   const switchLanguage = (newLocale: Locale) => {
     if (newLocale === locale) return;
-    
-    // Get the canonical (English) path first
+    // Hard navigation ensures server re-renders layout with new locale + dictionary
     const canonicalPath = getCanonicalPath(pathname, locale);
-    
-    // Then get the localized path for the new locale
     const newPath = getLocalizedPath(canonicalPath, newLocale);
-    
-    router.push(newPath);
+    window.location.href = newPath;
   };
 
   return (

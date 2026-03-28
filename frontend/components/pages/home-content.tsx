@@ -6,11 +6,11 @@ import {
   Shield,
   MessageCircle,
   CheckCircle,
-  Star,
   ArrowRight,
   TrendingUp,
-  Users,
   Car as CarIcon,
+  Users,
+  Star,
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,13 +21,7 @@ import { useLocale } from "@/lib/i18n/locale-context"
 import { brands } from "@/lib/data/cars"
 import type { Car } from "@/lib/data/cars"
 import { formatVND, formatKm } from "@/lib/utils/format-price"
-
-const stats = [
-  { icon: CarIcon, value: "1.200+", label: "Xe đang bán" },
-  { icon: Users, value: "5.000+", label: "Người dùng tin tưởng" },
-  { icon: CheckCircle, value: "850+", label: "Giao dịch thành công" },
-  { icon: Star, value: "4.9/5", label: "Đánh giá hài lòng" },
-]
+import type { SiteConfig } from "@/lib/supabase/queries/admin"
 
 const howItWorks = [
   {
@@ -52,13 +46,28 @@ const howItWorks = [
 
 interface HomeContentProps {
   featuredCars: Car[]
+  siteConfig: SiteConfig
+  locale: string
 }
 
-export function HomeContent({ featuredCars }: HomeContentProps) {
-  const { locale } = useLocale()
+export function HomeContent({ featuredCars, siteConfig, locale: localeProp }: HomeContentProps) {
+  const { locale: ctxLocale } = useLocale()
+  const locale = localeProp || ctxLocale
 
-  const buyPath = locale === "vi" ? `/${locale}/mua-xe` : `/${locale}/buy-cars`
-  const sellPath = locale === "vi" ? `/${locale}/ban-xe` : `/${locale}/sell-cars`
+  const isVi = locale === "vi"
+  const buyPath = isVi ? `/${locale}/mua-xe` : `/${locale}/buy-cars`
+  const sellPath = isVi ? `/${locale}/ban-xe` : `/${locale}/sell-cars`
+
+  const heroBadge   = isVi ? siteConfig.hero_badge_vi    : siteConfig.hero_badge_en
+  const heroTitle   = isVi ? siteConfig.hero_title_vi    : siteConfig.hero_title_en
+  const heroSubtitle = isVi ? siteConfig.hero_subtitle_vi : siteConfig.hero_subtitle_en
+
+  const stats = [
+    { icon: CarIcon, value: siteConfig.stats_cars_value,   label: isVi ? "Xe đang bán"            : "Cars Listed" },
+    { icon: Users,   value: siteConfig.stats_users_value,  label: isVi ? "Người dùng tin tưởng"   : "Trusted Users" },
+    { icon: CheckCircle, value: siteConfig.stats_deals_value,  label: isVi ? "Giao dịch thành công" : "Successful Deals" },
+    { icon: Star,    value: siteConfig.stats_rating_value, label: isVi ? "Đánh giá hài lòng"      : "Satisfaction Rating" },
+  ]
 
   return (
     <main className="min-h-screen">
@@ -69,18 +78,15 @@ export function HomeContent({ featuredCars }: HomeContentProps) {
           <div className="mx-auto max-w-3xl text-center">
             <Badge variant="secondary" className="mb-6 gap-2 px-4 py-1.5 text-sm">
               <Zap className="size-3.5 text-yellow-500" />
-              Nền tảng mua bán xe uy tín #1 Việt Nam
+              {heroBadge}
             </Badge>
 
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Mua bán xe ô tô{" "}
-              <span className="text-primary">an toàn</span>,{" "}
-              <span className="text-primary">minh bạch</span>
+              {heroTitle}
             </h1>
 
             <p className="mt-6 text-lg text-muted-foreground sm:text-xl">
-              Kết nối người mua và người bán qua đội ngũ môi giới chuyên nghiệp.
-              Mọi giao dịch đều được bảo vệ — không lo lừa đảo, không lo mất tiền.
+              {heroSubtitle}
             </p>
 
             {/* Search bar */}

@@ -51,6 +51,43 @@ export interface AdminData {
   growth: GrowthPoint[]
 }
 
+export interface SiteConfig {
+  hero_badge_vi: string
+  hero_badge_en: string
+  hero_title_vi: string
+  hero_title_en: string
+  hero_subtitle_vi: string
+  hero_subtitle_en: string
+  stats_cars_value: string
+  stats_users_value: string
+  stats_deals_value: string
+  stats_rating_value: string
+}
+
+export const defaultSiteConfig: SiteConfig = {
+  hero_badge_vi: 'Nền tảng mua bán xe uy tín #1 Việt Nam',
+  hero_badge_en: "Vietnam's #1 Trusted Car Marketplace",
+  hero_title_vi: 'Mua bán xe ô tô an toàn, minh bạch',
+  hero_title_en: 'Buy & Sell Cars Safely, Transparently',
+  hero_subtitle_vi: 'Kết nối người mua và người bán qua đội ngũ môi giới chuyên nghiệp. Mọi giao dịch đều được bảo vệ — không lo lừa đảo, không lo mất tiền.',
+  hero_subtitle_en: 'Connect buyers and sellers through our professional broker team. Every transaction is protected — no fraud, no lost money.',
+  stats_cars_value: '1.200+',
+  stats_users_value: '5.000+',
+  stats_deals_value: '850+',
+  stats_rating_value: '4.9/5',
+}
+
+export async function getSiteConfig(): Promise<SiteConfig> {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('site_config')
+    .select('value')
+    .eq('key', 'homepage')
+    .maybeSingle()
+  if (!data) return defaultSiteConfig
+  return { ...defaultSiteConfig, ...(data.value as Partial<SiteConfig>) }
+}
+
 export async function getAdminData(): Promise<AdminData> {
   const supabase = createAdminClient()
   const today = new Date().toISOString().split('T')[0]

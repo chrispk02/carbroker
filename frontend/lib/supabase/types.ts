@@ -157,6 +157,12 @@ export type Database = {
         Update: Record<string, never>
         Relationships: []
       }
+      site_config: {
+        Row: { key: string; value: Record<string, unknown>; updated_at: string }
+        Insert: { key: string; value: Record<string, unknown>; updated_at?: string }
+        Update: { value?: Record<string, unknown>; updated_at?: string }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

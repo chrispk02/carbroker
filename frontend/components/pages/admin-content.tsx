@@ -13,7 +13,7 @@ import {
   Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
   AreaChart, Area,
 } from 'recharts'
-import type { AdminData, AdminUser, AdminCar } from '@/lib/supabase/queries/admin'
+import type { AdminData, AdminUser, AdminCar, SiteConfig } from '@/lib/supabase/queries/admin'
 import { SiteHeader } from '@/components/site-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -88,11 +88,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ── Main Component ───────────────────────────────────────────
-interface Props { data: AdminData }
+interface Props { data: AdminData; siteConfig: SiteConfig }
 
-export function AdminContent({ data }: Props) {
+export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
   const { stats, growth } = data
-  const [tab, setTab] = useState<'overview' | 'users' | 'cars'>('overview')
+  const [tab, setTab] = useState<'overview' | 'users' | 'cars' | 'content'>('overview')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -100,6 +100,22 @@ export function AdminContent({ data }: Props) {
   const [cars, setCars] = useState<AdminCar[]>(data.cars)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+
+  // ── Create user modal state ───────────────────────────────
+  const [showCreateUser, setShowCreateUser] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newFullName, setNewFullName] = useState('')
+  const [newRole, setNewRole] = useState<'buyer' | 'seller'>('buyer')
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [createSuccess, setCreateSuccess] = useState(false)
+
+  // ── Site config editor state ──────────────────────────────
+  const [cfg, setCfg] = useState<SiteConfig>(initialSiteConfig)
+  const [cfgSaving, setCfgSaving] = useState(false)
+  const [cfgSaved, setCfgSaved] = useState(false)
+  const [cfgError, setCfgError] = useState<string | null>(null)
 
   // ── Derived analytics ────────────────────────────────────
   const avgPrice = useMemo(() => {
@@ -174,6 +190,41 @@ export function AdminContent({ data }: Props) {
     setLoadingId(null)
   }
 
+  // ── Create user ──────────────────────────────────────────
+  async function handleCreateUser(e: React.SyntheticEvent) {
+    e.preventDefault()
+    setCreateLoading(true)
+    setCreateError(null)
+    const res = await fetch('/api/admin/create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: newEmail, password: newPassword, fullName: newFullName, role: newRole }),
+    })
+    const json = await res.json()
+    setCreateLoading(false)
+    if (!res.ok) { setCreateError(json.error ?? 'Có lỗi xảy ra'); return }
+    setCreateSuccess(true)
+    setNewEmail(''); setNewPassword(''); setNewFullName(''); setNewRole('buyer')
+    setTimeout(() => { setCreateSuccess(false); setShowCreateUser(false) }, 2000)
+  }
+
+  // ── Save site config ──────────────────────────────────────
+  async function handleSaveConfig(e: React.SyntheticEvent) {
+    e.preventDefault()
+    setCfgSaving(true)
+    setCfgError(null)
+    const res = await fetch('/api/admin/site-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: cfg }),
+    })
+    const json = await res.json()
+    setCfgSaving(false)
+    if (!res.ok) { setCfgError(json.error ?? 'Có lỗi xảy ra'); return }
+    setCfgSaved(true)
+    setTimeout(() => setCfgSaved(false), 3000)
+  }
+
   // ── Stat cards data ──────────────────────────────────────
   const statCards = [
     {
@@ -233,9 +284,10 @@ export function AdminContent({ data }: Props) {
   ] as const
 
   const tabs = [
-    { key: 'overview', label: 'Tổng quan', icon: BarChart3 },
+    { key: 'overview', label: 'Tổng quan',                   icon: BarChart3 },
     { key: 'users',    label: `Người dùng (${users.length})`, icon: Users },
-    { key: 'cars',     label: `Tin đăng (${cars.length})`, icon: Car },
+    { key: 'cars',     label: `Tin đăng (${cars.length})`,    icon: Car },
+    { key: 'content',  label: 'Nội dung trang',               icon: ShieldCheck },
   ] as const
 
   return (
@@ -501,8 +553,75 @@ export function AdminContent({ data }: Props) {
                     ))}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{filteredUsers.length} kết quả</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">{filteredUsers.length} kết quả</p>
+                  <button
+                    onClick={() => { setShowCreateUser(true); setCreateError(null); setCreateSuccess(false) }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    <UserCheck className="size-3" />
+                    Tạo user mới
+                  </button>
+                </div>
               </div>
+
+              {/* Create user modal */}
+              {showCreateUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateUser(false) }}>
+                  <div className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-xl">
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-lg font-semibold text-foreground">Tạo user mới</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">Tài khoản sẽ được kích hoạt ngay</p>
+                      </div>
+                      <button onClick={() => setShowCreateUser(false)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">✕</button>
+                    </div>
+
+                    {createSuccess ? (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <div className="flex size-14 items-center justify-center rounded-full bg-emerald-100">
+                          <CheckCircle className="size-7 text-emerald-600" />
+                        </div>
+                        <p className="font-medium text-emerald-700">Tạo user thành công!</p>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleCreateUser} className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Họ và tên</label>
+                          <Input placeholder="Nguyễn Văn A" value={newFullName} onChange={e => setNewFullName(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Email <span className="text-destructive">*</span></label>
+                          <Input type="email" placeholder="user@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Mật khẩu <span className="text-destructive">*</span></label>
+                          <Input type="password" placeholder="Tối thiểu 6 ký tự" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Loại tài khoản</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(['buyer', 'seller'] as const).map(r => (
+                              <button key={r} type="button" onClick={() => setNewRole(r)}
+                                className={`flex items-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${newRole === r ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-muted-foreground'}`}>
+                                {r === 'seller' ? <Car className="size-4" /> : <ShoppingBag className="size-4" />}
+                                {r === 'seller' ? 'Người bán' : 'Người mua'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {createError && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{createError}</p>}
+                        <div className="flex gap-2 pt-1">
+                          <button type="button" onClick={() => setShowCreateUser(false)} className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Hủy</button>
+                          <button type="submit" disabled={createLoading} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">
+                            {createLoading ? <Loader2 className="mx-auto size-4 animate-spin" /> : 'Tạo user'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <Card>
                 <div className="overflow-x-auto">
@@ -692,6 +811,114 @@ export function AdminContent({ data }: Props) {
                 </div>
               </Card>
             </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              TAB: CONTENT
+          ══════════════════════════════════════════════════════ */}
+          {tab === 'content' && (
+            <form onSubmit={handleSaveConfig} className="space-y-6">
+
+              {/* Hero section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Hero Section</CardTitle>
+                  <CardDescription className="text-xs">Phần banner đầu trang chủ</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Badge (Tiếng Việt)</label>
+                      <Input value={cfg.hero_badge_vi} onChange={e => setCfg(p => ({ ...p, hero_badge_vi: e.target.value }))} placeholder="Nền tảng mua bán xe uy tín #1 Việt Nam" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Badge (English)</label>
+                      <Input value={cfg.hero_badge_en} onChange={e => setCfg(p => ({ ...p, hero_badge_en: e.target.value }))} placeholder="Vietnam's #1 Trusted Car Marketplace" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Tiêu đề (Tiếng Việt)</label>
+                      <Input value={cfg.hero_title_vi} onChange={e => setCfg(p => ({ ...p, hero_title_vi: e.target.value }))} placeholder="Mua bán xe ô tô an toàn, minh bạch" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Tiêu đề (English)</label>
+                      <Input value={cfg.hero_title_en} onChange={e => setCfg(p => ({ ...p, hero_title_en: e.target.value }))} placeholder="Buy & Sell Cars Safely, Transparently" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Mô tả (Tiếng Việt)</label>
+                      <textarea
+                        rows={3}
+                        value={cfg.hero_subtitle_vi}
+                        onChange={e => setCfg(p => ({ ...p, hero_subtitle_vi: e.target.value }))}
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                        placeholder="Kết nối người mua và người bán..."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Mô tả (English)</label>
+                      <textarea
+                        rows={3}
+                        value={cfg.hero_subtitle_en}
+                        onChange={e => setCfg(p => ({ ...p, hero_subtitle_en: e.target.value }))}
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                        placeholder="Connect buyers and sellers..."
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Stats section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Số liệu nổi bật</CardTitle>
+                  <CardDescription className="text-xs">4 con số hiển thị bên dưới hero section</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    {[
+                      { key: 'stats_cars_value',   icon: '🚗', label: 'Xe đang bán' },
+                      { key: 'stats_users_value',  icon: '👥', label: 'Người dùng' },
+                      { key: 'stats_deals_value',  icon: '✅', label: 'Giao dịch thành công' },
+                      { key: 'stats_rating_value', icon: '⭐', label: 'Đánh giá' },
+                    ].map(({ key, icon, label }) => (
+                      <div key={key} className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">{icon} {label}</label>
+                        <Input
+                          value={cfg[key as keyof SiteConfig]}
+                          onChange={e => setCfg(p => ({ ...p, [key]: e.target.value }))}
+                          placeholder="1.200+"
+                          className="text-center font-semibold"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Save button */}
+              {cfgError && (
+                <p className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive">{cfgError}</p>
+              )}
+              {cfgSaved && (
+                <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+                  <CheckCircle className="size-4" /> Đã lưu thành công! Trang chủ sẽ cập nhật sau vài giây.
+                </div>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={cfgSaving}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                >
+                  {cfgSaving ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+                  {cfgSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
           )}
 
         </div>
