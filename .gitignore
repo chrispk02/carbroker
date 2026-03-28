@@ -10,7 +10,7 @@ build
 
 # Chỉ push frontend — bỏ qua các folder khác
 .claude/
-supabase/
+/supabase/
 
 # Claude Code — personal config
 .claude/CLAUDE.local.md
