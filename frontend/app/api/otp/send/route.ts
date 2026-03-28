@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   })
   if (dbError) {
     console.error('[otp/send] db error:', dbError.message)
-    return NextResponse.json({ error: 'Không thể tạo OTP. Vui lòng thử lại.' }, { status: 500 })
+    return NextResponse.json({ error: `DB error: ${dbError.message} (code: ${dbError.code})` }, { status: 500 })
   }
 
   // Sandbox: log OTP ra console thay vì gửi thật (khi dev local)
