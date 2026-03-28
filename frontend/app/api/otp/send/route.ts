@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHash, randomInt } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Chuyển số quốc tế sang format ESMS (+84912345678 → 0912345678)
-function toEsmsPhone(phone: string): string {
+// SpeedSMS nhận số dạng 0912345678 (không cần +84)
+function normalizePhone(phone: string): string {
   phone = phone.replace(/\s/g, '')
   if (phone.startsWith('+84')) return '0' + phone.slice(3)
   if (phone.startsWith('84') && phone.length >= 10) return '0' + phone.slice(2)
@@ -40,29 +40,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Không thể tạo OTP. Vui lòng thử lại.' }, { status: 500 })
   }
 
-  // Gửi SMS qua ESMS.vn
-  const esmsPhone = toEsmsPhone(phone)
-  const content = `CarBroker: Ma xac nhan cua ban la ${otp}. Het han sau 5 phut. Khong chia se ma nay.`
-  const sandbox = process.env.NODE_ENV !== 'production' ? '1' : '0'
+  // Sandbox: log OTP ra console thay vì gửi thật (khi dev local)
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[OTP DEV] Phone: ${phone} — Code: ${otp}`)
+    return NextResponse.json({ success: true })
+  }
 
-  const params = new URLSearchParams({
-    ApiKey: process.env.ESMS_API_KEY!,
-    SecretKey: process.env.ESMS_SECRET_KEY!,
-    Phone: esmsPhone,
-    Content: content,
-    SmsType: '2',
-    IsUnicode: '0',
-    Sandbox: sandbox,
+  // Gửi SMS qua SpeedSMS
+  const token = process.env.SPEEDSMS_ACCESS_TOKEN!
+  const content = `CarBroker: Ma xac nhan cua ban la ${otp}. Het han sau 5 phut.`
+
+  const smsRes = await fetch('https://api.speedsms.vn/index.php/sms/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // SpeedSMS dùng Basic Auth: base64(access_token:x)
+      Authorization: 'Basic ' + Buffer.from(`${token}:x`).toString('base64'),
+    },
+    body: JSON.stringify({
+      to: [normalizePhone(phone)],
+      content,
+      sms_type: 2,   // 2 = SMS quảng cáo (rẻ nhất), 4 = có brandname
+      sender: '',
+    }),
   })
 
-  const esmsRes = await fetch(
-    `https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_get/?${params}`
-  )
-  const esmsData = await esmsRes.json().catch(() => null)
+  const smsData = await smsRes.json().catch(() => null)
 
-  // CodeResult: 100 = thành công
-  if (!esmsRes.ok || esmsData?.CodeResult !== '100') {
-    console.error('[otp/send] esms error:', esmsData)
+  // SpeedSMS trả về status: "success" khi thành công
+  if (!smsRes.ok || smsData?.status !== 'success') {
+    console.error('[otp/send] speedsms error:', smsData)
     return NextResponse.json(
       { error: 'Không thể gửi SMS. Vui lòng thử lại sau.' },
       { status: 502 }
