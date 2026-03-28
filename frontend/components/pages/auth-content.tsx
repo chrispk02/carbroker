@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Shield, Car, Users, Mail, CheckCircle2, RotateCcw } from "lucide-react";
+import { Shield, Car, Users, Mail, CheckCircle2, RotateCcw, Phone, KeyRound, Loader2 } from "lucide-react";
 import { useLocale } from "@/lib/i18n/locale-context";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 function AuthForm() {
   const { locale, dictionary: t } = useLocale();
-  const { login, signup, resendConfirmationEmail } = useAuth();
+  const { login, signup, resendConfirmationEmail, sendLoginOtp, verifyLoginOtp } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
@@ -26,6 +26,12 @@ function AuthForm() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
+
+  // Phone login state
+  const [signInMode, setSignInMode] = useState<'email' | 'phone'>('email');
+  const [phoneLogin, setPhoneLogin] = useState('');
+  const [phoneLoginOtpSent, setPhoneLoginOtpSent] = useState(false);
+  const [phoneLoginOtp, setPhoneLoginOtp] = useState('');
   const [selectedRole, setSelectedRole] = useState<"buyer" | "seller">("buyer");
   const [formData, setFormData] = useState({
     name: "",
@@ -43,6 +49,27 @@ function AuthForm() {
     setIsLoading(false);
     if (error) { setAuthError(error); return; }
     const returnUrl = searchParams.get("returnUrl") || `/${locale}`;
+    router.push(returnUrl);
+  };
+
+  const handleSendLoginOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsLoading(true);
+    const { error } = await sendLoginOtp(phoneLogin.trim());
+    setIsLoading(false);
+    if (error) { setAuthError(error); return; }
+    setPhoneLoginOtpSent(true);
+  };
+
+  const handleVerifyLoginOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsLoading(true);
+    const { error } = await verifyLoginOtp(phoneLogin.trim(), phoneLoginOtp.trim());
+    setIsLoading(false);
+    if (error) { setAuthError(error); return; }
+    const returnUrl = searchParams.get('returnUrl') || `/${locale}`;
     router.push(returnUrl);
   };
 
@@ -159,67 +186,139 @@ function AuthForm() {
                   </p>
                 </div>
 
+                {/* Email / Phone toggle */}
+                <div className="mb-4 flex rounded-lg border p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => { setSignInMode('email'); setAuthError(null); setPhoneLoginOtpSent(false); setPhoneLoginOtp(''); }}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-medium transition-colors",
+                      signInMode === 'email' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Mail className="size-3.5" /> Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSignInMode('phone'); setAuthError(null); }}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-medium transition-colors",
+                      signInMode === 'phone' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Phone className="size-3.5" /> Số điện thoại
+                  </button>
+                </div>
+
                 {authError && (
                   <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                     {authError}
                   </div>
                 )}
 
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel>{t.auth.email}</FieldLabel>
-                      <Input
-                        type="email"
-                        placeholder={t.auth.emailPlaceholder}
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        required
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel>{t.auth.password}</FieldLabel>
-                      <Input
-                        type="password"
-                        placeholder={t.auth.passwordPlaceholder}
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        required
-                      />
-                    </Field>
-                  </FieldGroup>
+                {signInMode === 'email' ? (
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <FieldGroup>
+                      <Field>
+                        <FieldLabel>{t.auth.email}</FieldLabel>
+                        <Input
+                          type="email"
+                          placeholder={t.auth.emailPlaceholder}
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          required
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel>{t.auth.password}</FieldLabel>
+                        <Input
+                          type="password"
+                          placeholder={t.auth.passwordPlaceholder}
+                          value={formData.password}
+                          onChange={(e) =>
+                            setFormData({ ...formData, password: e.target.value })
+                          }
+                          required
+                        />
+                      </Field>
+                    </FieldGroup>
 
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={formData.rememberMe}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, rememberMe: !!checked })
-                        }
-                      />
-                      {t.auth.rememberMe}
-                    </label>
-                    <Link
-                      href="#"
-                      className="text-sm font-medium text-accent hover:underline"
-                    >
-                      {t.auth.forgotPassword}
-                    </Link>
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={formData.rememberMe}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, rememberMe: !!checked })
+                          }
+                        />
+                        {t.auth.rememberMe}
+                      </label>
+                      <Link
+                        href="#"
+                        className="text-sm font-medium text-accent hover:underline"
+                      >
+                        {t.auth.forgotPassword}
+                      </Link>
+                    </div>
+
+                    <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                      {isLoading ? t.common.loading : t.auth.signInButton}
+                    </Button>
+                  </form>
+                ) : (
+                  /* Phone OTP login */
+                  <div className="space-y-4">
+                    {!phoneLoginOtpSent ? (
+                      <form onSubmit={handleSendLoginOtp} className="space-y-4">
+                        <Field>
+                          <FieldLabel>Số điện thoại</FieldLabel>
+                          <Input
+                            type="tel"
+                            placeholder="+84912345678"
+                            value={phoneLogin}
+                            onChange={(e) => setPhoneLogin(e.target.value)}
+                            required
+                          />
+                          <p className="text-[11px] text-muted-foreground mt-1">Nhập số có mã quốc gia, VD: +84912345678</p>
+                        </Field>
+                        <Button type="submit" className="w-full" size="lg" disabled={isLoading || !phoneLogin.trim()}>
+                          {isLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Phone className="mr-2 size-4" />}
+                          {isLoading ? 'Đang gửi...' : 'Nhận mã OTP'}
+                        </Button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleVerifyLoginOtp} className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Nhập mã OTP đã gửi đến <span className="font-medium text-foreground">{phoneLogin}</span>
+                        </p>
+                        <Field>
+                          <FieldLabel>Mã OTP</FieldLabel>
+                          <Input
+                            placeholder="123456"
+                            value={phoneLoginOtp}
+                            onChange={(e) => setPhoneLoginOtp(e.target.value)}
+                            maxLength={6}
+                            className="text-center tracking-widest text-xl font-mono"
+                            required
+                          />
+                        </Field>
+                        <Button type="submit" className="w-full" size="lg" disabled={isLoading || phoneLoginOtp.length < 4}>
+                          {isLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <KeyRound className="mr-2 size-4" />}
+                          {isLoading ? 'Đang xác nhận...' : 'Đăng nhập'}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => { setPhoneLoginOtpSent(false); setPhoneLoginOtp(''); }}
+                          className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+                        >
+                          Đổi số điện thoại
+                        </button>
+                      </form>
+                    )}
                   </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? t.common.loading : t.auth.signInButton}
-                  </Button>
-                </form>
+                )}
 
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">

@@ -24,6 +24,18 @@ export default async function DashboardPage({ params }: PageProps) {
     redirect(`/${locale}/auth`)
   }
 
+  // Seller check — chỉ người bán mới xem dashboard phân tích
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const role = profile?.role ?? user.user_metadata?.role ?? 'buyer'
+  if (role !== 'seller') {
+    redirect(`/${locale}/profile?notice=seller_required`)
+  }
+
   const data = await getDashboardData(user.id)
   const userName =
     user.user_metadata?.full_name ||

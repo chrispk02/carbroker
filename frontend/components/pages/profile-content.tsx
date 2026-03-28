@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { User, Phone, Mail, Shield, Camera, Loader2, CheckCircle, Car, ShoppingBag, ShieldCheck, KeyRound } from "lucide-react"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { useAuth } from "@/lib/auth/context"
@@ -39,6 +39,7 @@ export function ProfileContent({
   const { locale, dictionary: t } = useLocale()
   const { sendPhoneOtp, verifyPhoneOtp } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [fullName, setFullName] = useState(initialFullName)
@@ -50,6 +51,11 @@ export function ProfileContent({
   const [uploading, setUploading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(
+    searchParams.get('notice') === 'seller_required'
+      ? 'Bạn cần chuyển tài khoản sang Người bán để xem Dashboard phân tích.'
+      : null
+  )
 
   // Phone OTP state
   const [phoneVerified, setPhoneVerified] = useState(!!phoneConfirmedAt)
@@ -120,7 +126,11 @@ export function ProfileContent({
       .eq('id', userId)
 
     if (updateErr) {
-      setError('Không thể lưu thông tin. Vui lòng thử lại.')
+      if (updateErr.code === '23505' || updateErr.message?.includes('profiles_phone_unique')) {
+        setError('Số điện thoại này đã được sử dụng bởi tài khoản khác.')
+      } else {
+        setError('Không thể lưu thông tin. Vui lòng thử lại.')
+      }
       setSaving(false)
       return
     }
@@ -176,6 +186,17 @@ export function ProfileContent({
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Hồ sơ cá nhân</h1>
             <p className="mt-1 text-sm text-muted-foreground">Quản lý thông tin tài khoản của bạn</p>
           </div>
+
+          {notice && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-400">
+              <Shield className="mt-0.5 size-4 shrink-0" />
+              <div>
+                <p className="font-medium">Yêu cầu tài khoản Người bán</p>
+                <p className="mt-0.5 opacity-90">{notice}</p>
+              </div>
+              <button onClick={() => setNotice(null)} className="ml-auto shrink-0 opacity-60 hover:opacity-100">✕</button>
+            </div>
+          )}
 
           <form onSubmit={handleSave} className="space-y-6">
             {/* ─── Avatar + basic info ─── */}

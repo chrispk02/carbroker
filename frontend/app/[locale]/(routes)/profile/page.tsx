@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import type { Locale } from "@/lib/i18n/config"
@@ -30,15 +31,17 @@ export default async function ProfilePage({ params }: PageProps) {
     .single()
 
   return (
-    <ProfileContent
-      userId={user.id}
-      email={user.email ?? ''}
-      initialFullName={profile?.full_name ?? user.user_metadata?.full_name ?? ''}
-      initialPhone={profile?.phone ?? ''}
-      initialRole={(profile?.role ?? user.user_metadata?.role ?? 'buyer') as 'buyer' | 'seller'}
-      initialAvatarUrl={profile?.avatar_url ?? null}
-      createdAt={user.created_at}
-      phoneConfirmedAt={user.phone_confirmed_at ?? null}
-    />
+    <Suspense>
+      <ProfileContent
+        userId={user.id}
+        email={user.email ?? ''}
+        initialFullName={profile?.full_name ?? user.user_metadata?.full_name ?? ''}
+        initialPhone={profile?.phone ?? ''}
+        initialRole={(profile?.role ?? user.user_metadata?.role ?? 'buyer') as 'buyer' | 'seller'}
+        initialAvatarUrl={profile?.avatar_url ?? null}
+        createdAt={user.created_at}
+        phoneConfirmedAt={user.phone_confirmed_at ?? null}
+      />
+    </Suspense>
   )
 }

@@ -35,6 +35,8 @@ interface AuthContextType {
   resendConfirmationEmail: (email: string) => Promise<{ error: string | null }>
   sendPhoneOtp: (phone: string) => Promise<{ error: string | null }>
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>
+  sendLoginOtp: (phone: string) => Promise<{ error: string | null }>
+  verifyLoginOtp: (phone: string, token: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -155,6 +157,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }, [supabase])
 
+  const sendLoginOtp = useCallback(async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ phone })
+    if (error) {
+      if (error.message.includes('provider')) return { error: 'Tính năng đăng nhập SMS chưa được cấu hình.' }
+      return { error: error.message }
+    }
+    return { error: null }
+  }, [supabase])
+
+  const verifyLoginOtp = useCallback(async (phone: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
+    if (error) {
+      if (error.message.includes('invalid') || error.message.includes('expired')) {
+        return { error: 'Mã OTP không đúng hoặc đã hết hạn.' }
+      }
+      return { error: error.message }
+    }
+    return { error: null }
+  }, [supabase])
+
   return (
     <AuthContext.Provider
       value={{
@@ -168,6 +190,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendConfirmationEmail,
         sendPhoneOtp,
         verifyPhoneOtp,
+        sendLoginOtp,
+        verifyLoginOtp,
       }}
     >
       {children}
