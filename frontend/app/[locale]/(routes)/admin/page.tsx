@@ -18,7 +18,7 @@ export default async function AdminPage({ params }: PageProps) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect(`/${locale}/auth`)
+  if (!user) redirect(`/${locale}/auth?returnUrl=/${locale}/admin`)
 
   const { data: profile } = await supabase
     .from('profiles')

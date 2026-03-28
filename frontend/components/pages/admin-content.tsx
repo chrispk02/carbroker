@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import {
   Users, Car, Eye, TrendingUp, ShieldCheck, BarChart3,
-  Search, Crown, EyeOff, CheckCircle, Loader2,
+  Search, Crown, EyeOff, CheckCircle, Loader2, Trash2,
   UserCheck, ShoppingBag, ListChecks, Activity, DollarSign,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw,
   Clock, Star,
@@ -191,6 +191,18 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
       body: JSON.stringify({ userId, isAdmin: !current }),
     })
     if (res.ok) setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !current } : u))
+    setLoadingId(null)
+  }
+
+  async function deleteUser(userId: string) {
+    if (!confirm('Xoá người dùng này? Hành động không thể hoàn tác.')) return
+    setLoadingId(userId + '_del')
+    const res = await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    if (res.ok) setUsers(prev => prev.filter(u => u.id !== userId))
     setLoadingId(null)
   }
 
@@ -696,6 +708,7 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                         <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.admin.colListings}</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.admin.colJoined}</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.admin.colPermission}</th>
+                        <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -735,7 +748,7 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                           <td className="px-4 py-3">
                             <button
                               onClick={() => toggleAdmin(u.id, u.is_admin)}
-                              disabled={loadingId === u.id}
+                              disabled={loadingId === u.id || loadingId === u.id + '_del'}
                               title={u.is_admin ? 'Thu hồi quyền admin' : 'Cấp quyền admin'}
                               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors border ${
                                 u.is_admin
@@ -748,6 +761,20 @@ export function AdminContent({ data, siteConfig: initialSiteConfig }: Props) {
                                 : <Crown className="size-3" />
                               }
                               {u.is_admin ? t.admin.adminLabel : t.admin.grantAdmin}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => deleteUser(u.id)}
+                              disabled={loadingId === u.id + '_del' || loadingId === u.id}
+                              title="Xoá người dùng"
+                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                            >
+                              {loadingId === u.id + '_del'
+                                ? <Loader2 className="size-3 animate-spin" />
+                                : <Trash2 className="size-3" />
+                              }
+                              Xoá
                             </button>
                           </td>
                         </tr>
