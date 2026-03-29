@@ -35,6 +35,10 @@ export function SiteHeader() {
   const authPath = `/${locale}/auth`;
   const dashboardPath = `/${locale}/dashboard`;
   const profilePath = `/${locale}/profile`;
+  const isVi = locale === "vi"
+  const postCarPath = isVi
+    ? `/${locale}/ban-xe/dang-tin`
+    : `/${locale}/sell-cars/post`
 
   const navLinks = [
     { href: `/${locale}`, label: t.nav.home },
@@ -54,6 +58,9 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href={`/${locale}`} className="flex items-center gap-2">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="size-7 text-primary" aria-hidden="true">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
           <span className="text-xl font-bold text-foreground">CarBroker</span>
         </Link>
 
@@ -81,6 +88,11 @@ export function SiteHeader() {
 
           {/* Desktop Auth */}
           <div className="hidden items-center gap-2 md:flex">
+            <Button size="sm" asChild>
+              <Link href={postCarPath}>
+                {isVi ? "Đăng Tin" : "Post Car"}
+              </Link>
+            </Button>
             {isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -144,7 +156,12 @@ export function SiteHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <SheetHeader>
-                <SheetTitle className="text-left">CarBroker</SheetTitle>
+                <SheetTitle className="flex items-center gap-2 text-left">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="size-5 text-primary" aria-hidden="true">
+                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                  </svg>
+                  CarBroker
+                </SheetTitle>
               </SheetHeader>
               <nav className="mt-6 flex flex-col gap-1">
                 {navLinks.map((link) => (

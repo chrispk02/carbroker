@@ -91,7 +91,7 @@ export function BuyCarsContent({
       <SiteHeader />
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
-        <section className="border-b bg-card py-10">
+        <section className="border-b bg-gradient-to-b from-secondary/40 to-background py-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -185,10 +185,17 @@ export function BuyCarsContent({
             </div>
 
             {cars.length === 0 ? (
-              <div className="py-20 text-center text-muted-foreground">
-                <CarIcon className="mx-auto mb-4 size-12 opacity-30" />
-                <p className="text-lg font-medium">{t.buyCars.noResults}</p>
-                <p className="mt-1 text-sm">{t.buyCars.noResultsHint}</p>
+              <div className="flex flex-col items-center py-24 text-center">
+                <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-secondary">
+                  <CarIcon className="size-10 text-muted-foreground/50" />
+                </div>
+                <p className="text-lg font-semibold text-foreground">{t.buyCars.noResults}</p>
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">{t.buyCars.noResultsHint}</p>
+                {hasFilters && (
+                  <Button variant="outline" className="mt-6" onClick={clearFilters}>
+                    {t.buyCars.clearFilters}
+                  </Button>
+                )}
               </div>
             ) : (
               <>
@@ -232,11 +239,13 @@ export function BuyCarsContent({
                                 <Fuel className="size-3" />
                                 {car.fuel}
                               </span>
+                              <span className="rounded-md bg-secondary px-2 py-1">{car.transmission}</span>
                             </div>
                             <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                               <MapPin className="size-3" />
                               {car.location}
                             </div>
+                            <div className="mt-1 text-xs text-muted-foreground truncate">{car.seller?.name}</div>
                             <div className="mt-3 flex items-center text-sm font-medium text-primary">
                               {t.buyCars.viewDetails}
                               <ChevronRight className="ml-1 size-4" />
