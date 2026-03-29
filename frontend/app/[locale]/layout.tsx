@@ -4,6 +4,7 @@ import { locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { LocaleProvider } from "@/lib/i18n/locale-context";
 import { AuthProvider } from "@/lib/auth/context";
+import { Toaster } from "@/components/ui/sonner";
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale })) as { locale: string }[];
@@ -45,6 +46,7 @@ export default async function LocaleLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <LocaleProvider locale={locale} dictionary={dictionary}>
           <AuthProvider>{children}</AuthProvider>
+          <Toaster richColors position="top-right" />
         </LocaleProvider>
       </body>
     </html>

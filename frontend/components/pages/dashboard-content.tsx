@@ -44,6 +44,7 @@ export function DashboardContent({ data, userName }: DashboardContentProps) {
   const supabase = createClient()
 
   const postCarPath = locale === 'vi' ? `/${locale}/ban-xe/dang-tin` : `/${locale}/sell-cars/post`
+  const editCarPath = (carId: string) => locale === 'vi' ? `/${locale}/ban-xe/chinh-sua/${carId}` : `/${locale}/sell-cars/edit/${carId}`
 
   async function handleToggleStatus(car: SellerCar) {
     const newStatus = car.status === 'active' ? 'hidden' : 'active'
@@ -329,6 +330,12 @@ export function DashboardContent({ data, userName }: DashboardContentProps) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={editCarPath(car.id)}>
+                                  <Pencil className="mr-2 size-3.5" />
+                                  Chỉnh sửa tin
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleToggleStatus(car)}>
                                 <Pencil className="mr-2 size-3.5" />
                                 {car.status === 'active' ? 'Ẩn tin' : 'Hiện tin'}

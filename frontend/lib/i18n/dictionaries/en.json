@@ -18,7 +18,12 @@
     "requestPurchase": "Request Purchase",
     "talkToBroker": "Talk to Broker",
     "signInToView": "Sign in to view",
-    "signInRequired": "Sign in required to contact seller"
+    "signInRequired": "Sign in required to contact seller",
+    "inquiryTitle": "Send Purchase Request",
+    "inquiryPlaceholder": "Enter your question or request about this car...",
+    "inquirySend": "Send Request",
+    "inquirySent": "Request sent! A broker will contact you soon.",
+    "talkToBrokerWhatsApp": "Chat on Zalo/WhatsApp with Broker"
   },
   "carSpecs": {
     "year": "Year",
@@ -77,7 +82,19 @@
     "termsOfService": "Terms of Service",
     "and": "and",
     "privacyPolicy": "Privacy Policy",
-    "platformBenefit": "Buy and sell cars safely through our broker-protected platform. No direct contact between buyers and sellers."
+    "platformBenefit": "Buy and sell cars safely through our broker-protected platform. No direct contact between buyers and sellers.",
+    "forgotPasswordTitle": "Forgot Password",
+    "forgotPasswordDesc": "Enter your account email and we'll send you a password reset link.",
+    "sendResetLink": "Send Reset Link",
+    "resetEmailSent": "Reset email sent!",
+    "resetEmailSentDesc": "Check your inbox and click the link to reset your password.",
+    "backToSignIn": "Back to sign in",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "updatePassword": "Update Password",
+    "passwordUpdated": "Password updated successfully!",
+    "passwordMismatch": "Passwords do not match",
+    "signingInWithGoogle": "Connecting to Google..."
   },
   "home": {
     "searchPlaceholder": "Search by make, model...",

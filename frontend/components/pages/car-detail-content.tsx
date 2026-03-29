@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -13,13 +14,18 @@ import {
   Gauge,
   Fuel,
   Settings2,
+  Send,
+  Phone,
 } from "lucide-react"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 import { CarImageGallery } from "@/components/car-image-gallery"
 import { CarFeatures } from "@/components/car-features"
 import { TrustBox } from "@/components/trust-box"
+import { FavoriteButton } from "@/components/favorite-button"
 import { InsuranceSelector } from "@/components/insurance-selector"
 import { LoanCalculator } from "@/components/loan-calculator"
 import { useLocale } from "@/lib/i18n/locale-context"
@@ -36,8 +42,32 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
 
+  const [showInquiry, setShowInquiry] = useState(false)
+  const [inquiryMsg, setInquiryMsg] = useState("")
+  const [inquiryLoading, setInquiryLoading] = useState(false)
+
   const buyPath = locale === "vi" ? `/${locale}/mua-xe` : `/${locale}/buy-cars`
   const authPath = `/${locale}/auth`
+  const brokerPhone = process.env.NEXT_PUBLIC_BROKER_WHATSAPP ?? "84912345678"
+
+  async function handleInquirySubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setInquiryLoading(true)
+    await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carId: car.id, carName: car.name, message: inquiryMsg }),
+    })
+    setInquiryLoading(false)
+    setShowInquiry(false)
+    setInquiryMsg("")
+    toast.success(t.carDetail.inquirySent)
+  }
+
+  function openWhatsApp() {
+    const msg = encodeURIComponent(`Xin chào, tôi muốn hỏi về xe: ${car.name} (${car.location}) - Giá: ${formatVND(car.priceVND)}`)
+    window.open(`https://wa.me/${brokerPhone}?text=${msg}`, '_blank')
+  }
 
   const specs = [
     { icon: Calendar, label: t.carSpecs.year,         value: car.year.toString() },
@@ -159,9 +189,12 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
 
             {/* Car Name & Price */}
             <div>
-              <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground">
-                {car.name}
-              </h1>
+              <div className="flex items-start justify-between gap-2">
+                <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground">
+                  {car.name}
+                </h1>
+                <FavoriteButton carId={car.id} className="shrink-0 mt-0.5" />
+              </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <p className="text-3xl font-bold text-primary">
                   {formatVND(car.priceVND)}
@@ -203,11 +236,31 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
                     router.push(`${authPath}?returnUrl=/${locale}/xe/${car.slug}`)
                     return
                   }
+                  setShowInquiry((v) => !v)
                 }}
               >
                 {!isAuthenticated && <Lock className="mr-2 size-4" />}
+                {isAuthenticated && <Send className="mr-2 size-4" />}
                 {t.carDetail.requestPurchase}
               </Button>
+
+              {isAuthenticated && showInquiry && (
+                <form onSubmit={handleInquirySubmit} className="space-y-2 rounded-lg border bg-secondary/30 p-3">
+                  <p className="text-xs font-medium text-foreground">{t.carDetail.inquiryTitle}</p>
+                  <Textarea
+                    placeholder={t.carDetail.inquiryPlaceholder}
+                    value={inquiryMsg}
+                    onChange={(e) => setInquiryMsg(e.target.value)}
+                    rows={3}
+                    required
+                    className="text-sm resize-none"
+                  />
+                  <Button type="submit" size="sm" className="w-full" disabled={inquiryLoading || !inquiryMsg.trim()}>
+                    {inquiryLoading ? t.common.loading : t.carDetail.inquirySend}
+                  </Button>
+                </form>
+              )}
+
               <Button
                 size="lg"
                 variant="outline"
@@ -217,10 +270,11 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
                     router.push(`${authPath}?returnUrl=/${locale}/xe/${car.slug}`)
                     return
                   }
+                  openWhatsApp()
                 }}
               >
-                <MessageCircle className="size-4" />
-                {t.carDetail.talkToBroker}
+                {isAuthenticated ? <Phone className="size-4" /> : <MessageCircle className="size-4" />}
+                {isAuthenticated ? t.carDetail.talkToBrokerWhatsApp : t.carDetail.talkToBroker}
               </Button>
             </div>
 

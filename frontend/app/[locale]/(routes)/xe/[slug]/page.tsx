@@ -13,12 +13,33 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
+  const { locale, slug } = await params
   const car = await getCarBySlugFromDB(slug)
   if (!car) return {}
+
+  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://carbroker.vn'
+  const title = `${car.name} - ${formatVND(car.priceVND)} | CarBroker`
+  const description = `${car.name}, ${car.year}, ${car.mileageKm.toLocaleString('vi-VN')}km, ${car.fuel}, ${car.location}. ${car.description.slice(0, 120)}...`
+  const url = `${BASE_URL}/${locale}/xe/${slug}`
+  const imageUrl = car.images[0]?.src
+
   return {
-    title: `${car.name} - ${formatVND(car.priceVND)} | CarBroker`,
-    description: `${car.name}, ${car.year}, ${car.mileageKm.toLocaleString("vi-VN")}km, ${car.fuel}, ${car.location}. ${car.description.slice(0, 120)}...`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      siteName: 'CarBroker',
+      ...(imageUrl ? { images: [{ url: imageUrl, width: 1200, height: 900, alt: car.name }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(imageUrl ? { images: [imageUrl] } : {}),
+    },
   }
 }
 

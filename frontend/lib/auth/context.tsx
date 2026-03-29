@@ -37,6 +37,8 @@ interface AuthContextType {
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>
   sendLoginOtp: (phone: string) => Promise<{ error: string | null }>
   verifyLoginOtp: (phone: string, token: string) => Promise<{ error: string | null }>
+  sendPasswordReset: (email: string, locale: string) => Promise<{ error: string | null }>
+  loginWithGoogle: (locale: string, returnUrl?: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -170,6 +172,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }, [])
 
+  const sendPasswordReset = useCallback(async (email: string, locale: string) => {
+    const redirectTo = `${window.location.origin}/auth/callback?next=/${locale}/auth/reset-password`
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) return { error: error.message }
+    return { error: null }
+  }, [supabase])
+
+  const loginWithGoogle = useCallback(async (locale: string, returnUrl?: string) => {
+    const next = returnUrl || `/${locale}`
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    })
+    if (error) return { error: error.message }
+    return { error: null }
+  }, [supabase])
+
   const verifyLoginOtp = useCallback(async (phone: string, token: string) => {
     const res = await fetch('/api/otp/verify', {
       method: 'POST',
@@ -203,6 +223,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyPhoneOtp,
         sendLoginOtp,
         verifyLoginOtp,
+        sendPasswordReset,
+        loginWithGoogle,
       }}
     >
       {children}

@@ -54,20 +54,55 @@ const CAR_SELECT = `
   car_features(feature)
 `
 
-export async function getActiveCars(): Promise<Car[]> {
+export const PAGE_SIZE = 12
+
+export interface CarFilters {
+  search?: string
+  brand?: string
+  fuelType?: string
+  priceRange?: string   // "0-500" | "500-1000" | "1000-2000" | "2000+"
+  page?: number
+}
+
+export async function getActiveCars(filters: CarFilters = {}): Promise<{ cars: Car[]; total: number }> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { search, brand, fuelType, priceRange, page = 1 } = filters
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  let query = supabase
     .from('cars')
-    .select(CAR_SELECT)
+    .select(CAR_SELECT, { count: 'exact' })
     .eq('status', 'active')
     .order('created_at', { ascending: false })
-    .limit(100)
+    .range(from, to)
+
+  if (brand) query = query.eq('brand', brand)
+  if (fuelType) query = query.eq('fuel', fuelType)
+
+  if (priceRange && priceRange !== 'all') {
+    const [minStr, maxStr] = priceRange.split('-')
+    const min = parseInt(minStr) * 1_000_000
+    if (maxStr) {
+      const max = parseInt(maxStr) * 1_000_000
+      query = query.gte('price_vnd', min).lt('price_vnd', max)
+    } else {
+      query = query.gte('price_vnd', min)
+    }
+  }
+
+  // Full-text search via ilike on title (Supabase free tier doesn't always have FTS)
+  if (search) {
+    query = query.ilike('title', `%${search}%`)
+  }
+
+  const { data, error, count } = await query
 
   if (error) {
     console.error('[cars:getActiveCars]', error.message)
-    return []
+    return { cars: [], total: 0 }
   }
-  return (data ?? []).map(mapDBCar)
+  return { cars: (data ?? []).map(mapDBCar), total: count ?? 0 }
 }
 
 export async function getCarBySlugFromDB(slug: string): Promise<Car | null> {

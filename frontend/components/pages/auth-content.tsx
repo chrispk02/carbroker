@@ -25,7 +25,7 @@ const GoogleIcon = () => (
 
 function AuthForm() {
   const { locale, dictionary: t } = useLocale();
-  const { login, signup, resendConfirmationEmail, sendLoginOtp, verifyLoginOtp } = useAuth();
+  const { login, signup, resendConfirmationEmail, sendLoginOtp, verifyLoginOtp, sendPasswordReset, loginWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -56,6 +56,12 @@ function AuthForm() {
   const [phoneLogin, setPhoneLogin] = useState("");
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtp, setPhoneOtp] = useState("");
+
+  // Forgot password
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotSent, setForgotSent] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   // Sign up
   const [signupName, setSignupName] = useState("");
@@ -114,6 +120,24 @@ function AuthForm() {
     setSignupSuccess(true);
   }
 
+  async function handleForgotPassword(e: React.SyntheticEvent) {
+    e.preventDefault()
+    setForgotLoading(true)
+    const { error } = await sendPasswordReset(forgotEmail, locale)
+    setForgotLoading(false)
+    if (error) { setAuthError(error); return }
+    setForgotSent(true)
+  }
+
+  async function handleGoogleSignIn() {
+    setAuthError(null)
+    setIsLoading(true)
+    const returnUrl = searchParams.get("returnUrl") || `/${locale}`
+    const { error } = await loginWithGoogle(locale, returnUrl)
+    if (error) { setAuthError(error); setIsLoading(false) }
+    // On success, page redirects — no need to setIsLoading(false)
+  }
+
   async function handleResendEmail() {
     setResendLoading(true);
     await resendConfirmationEmail(signupEmail);
@@ -133,8 +157,8 @@ function AuthForm() {
   );
 
   const GoogleButton = () => (
-    <Button variant="outline" type="button" className="w-full">
-      <GoogleIcon />{t.auth.google}
+    <Button variant="outline" type="button" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+      <GoogleIcon />{isLoading ? t.auth.signingInWithGoogle : t.auth.google}
     </Button>
   );
 
@@ -197,6 +221,45 @@ function AuthForm() {
 
               {/* ── Sign In ── */}
               <TabsContent value="signin" className="mt-6">
+                {forgotMode ? (
+                  <div>
+                    <button type="button" onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(""); setAuthError(null); }} className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+                      ← {t.auth.backToSignIn}
+                    </button>
+                    {forgotSent ? (
+                      <div className="py-4 text-center">
+                        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                          <CheckCircle2 className="size-8 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground">{t.auth.resetEmailSent}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">{t.auth.resetEmailSentDesc}</p>
+                        <Button variant="outline" className="mt-6 w-full" onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(""); }}>
+                          {t.auth.backToSignIn}
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold text-foreground">{t.auth.forgotPasswordTitle}</h2>
+                          <p className="mt-1 text-sm text-muted-foreground">{t.auth.forgotPasswordDesc}</p>
+                        </div>
+                        {authError && (
+                          <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{authError}</div>
+                        )}
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                          <Field>
+                            <FieldLabel>{t.auth.email}</FieldLabel>
+                            <Input type="email" placeholder={t.auth.emailPlaceholder} value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required autoFocus />
+                          </Field>
+                          <Button type="submit" className="w-full" size="lg" disabled={forgotLoading}>
+                            {forgotLoading ? t.common.loading : t.auth.sendResetLink}
+                          </Button>
+                        </form>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-foreground">{t.auth.welcomeBack}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">{t.auth.signInSubtitle}</p>
@@ -240,7 +303,7 @@ function AuthForm() {
                         <Checkbox checked={rememberMe} onCheckedChange={(c) => setRememberMe(!!c)} />
                         {t.auth.rememberMe}
                       </label>
-                      <Link href="#" className="text-sm font-medium text-accent hover:underline">{t.auth.forgotPassword}</Link>
+                      <button type="button" onClick={() => { setForgotMode(true); setAuthError(null); }} className="text-sm font-medium text-accent hover:underline">{t.auth.forgotPassword}</button>
                     </div>
                     <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                       {isLoading ? t.common.loading : t.auth.signInButton}
@@ -286,6 +349,8 @@ function AuthForm() {
                     {t.nav.signUp}
                   </button>
                 </p>
+                </>
+                )}
               </TabsContent>
 
               {/* ── Sign Up ── */}

@@ -18,7 +18,12 @@
     "requestPurchase": "Yêu cầu Mua",
     "talkToBroker": "Nói chuyện với Môi giới",
     "signInToView": "Đăng nhập để xem",
-    "signInRequired": "Cần đăng nhập để liên hệ người bán"
+    "signInRequired": "Cần đăng nhập để liên hệ người bán",
+    "inquiryTitle": "Gửi yêu cầu mua",
+    "inquiryPlaceholder": "Nhập câu hỏi hoặc yêu cầu của bạn về xe này...",
+    "inquirySend": "Gửi yêu cầu",
+    "inquirySent": "Đã gửi yêu cầu! Môi giới sẽ liên hệ bạn sớm.",
+    "talkToBrokerWhatsApp": "Chat Zalo/WhatsApp với Môi giới"
   },
   "carSpecs": {
     "year": "Năm",
@@ -77,7 +82,19 @@
     "termsOfService": "Điều khoản Dịch vụ",
     "and": "và",
     "privacyPolicy": "Chính sách Bảo mật",
-    "platformBenefit": "Mua và bán xe an toàn qua nền tảng được môi giới bảo vệ. Không có liên hệ trực tiếp giữa người mua và người bán."
+    "platformBenefit": "Mua và bán xe an toàn qua nền tảng được môi giới bảo vệ. Không có liên hệ trực tiếp giữa người mua và người bán.",
+    "forgotPasswordTitle": "Quên mật khẩu",
+    "forgotPasswordDesc": "Nhập email tài khoản của bạn, chúng tôi sẽ gửi link đặt lại mật khẩu.",
+    "sendResetLink": "Gửi link đặt lại",
+    "resetEmailSent": "Đã gửi email đặt lại!",
+    "resetEmailSentDesc": "Kiểm tra hộp thư và nhấn vào link để đặt lại mật khẩu.",
+    "backToSignIn": "Quay lại đăng nhập",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "updatePassword": "Cập nhật mật khẩu",
+    "passwordUpdated": "Mật khẩu đã được cập nhật thành công!",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "signingInWithGoogle": "Đang kết nối Google..."
   },
   "home": {
     "searchPlaceholder": "Tìm theo hãng xe, mẫu xe...",
